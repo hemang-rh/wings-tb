@@ -247,9 +247,21 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
   oc create ns istio-system
   ```
 
+- ```sh
+  oc create -f configs/servicemesh-subscription.yaml
+  ```
+
+- ```sh
+  oc create -f configs/servicemesh-scmp.yaml
+  ```
+
 **Verification**
 
 - Verify the pods are running for the service mesh control plane, ingress gateway, and egress gateway
+
+  ```sh
+  oc get pods -n istio-system
+  ```
 
 #### 3.2 Installing RHOS Serverless
 
@@ -361,6 +373,10 @@ extensionProviders:
 - [ ] Create the EnvoyFilter resource in the namespace for your OpenShift Service Mesh instance
 - [ ] Check that the AuthorizationPolicy resource was successfully created
 - [ ] Check that the EnvoyFilter resource was successfully created
+
+```
+
+```
 
 ```
 
