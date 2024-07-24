@@ -1,6 +1,16 @@
 # RHOAI Installation (imperatively)
 
-## Links
+##
+
+- [Fix kubeadmin as an Administrator](#1-fix-kubeadmin-as-an-administrator-for-openshift-ai)
+- [Adding adminstrative user](#2-adding-administrative-user)
+- [Installing the Red Hat OpenShift AI Operator using the CLI](#3-installing-the-red-hat-openshift-ai-operator-using-the-cli)
+- [Installing and managing Red Hat OpenShift AI components](#4-installing-and-managing-red-hat-openshift-ai-components)
+- [Adding a CA bundle](#5-adding-a-ca-bundle)
+- [(Optional) Configuring the OpenShift AI Operator logger](#6-optional-configuring-the-openshift-ai-operator-logger)
+- Installing KServe dependencies
+  - [Installing RHOS ServiceMesh](#71-installing-rhos-servicemesh)
+  - [Installing RHOS Serverless](#72-installing-rhos-serverless)
 
 ## Steps
 
@@ -263,11 +273,29 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
   oc get pods -n istio-system
   ```
 
-#### 3.2 Installing RHOS Serverless
+#### 7.2 Installing RHOS Serverless
 
-- [ ] Create namespace
-- [ ] Create opeator group
+- [ ] Define the Serverless operator namespace, operatorgroup, and subscription
+- [ ] Define a ServiceMeshMember object in a YAML file called serverless-smm.yaml
 - [ ] Create subscription
+
+**Commands**
+
+- ```sh
+  oc create -f configs/serverless-operator.yaml
+
+  # expected output
+  namespace/openshift-serverless created
+  operatorgroup.operators.coreos.com/serverless-operator created
+  subscription.operators.coreos.com/serverless-operator created
+  ```
+
+- ```sh
+  oc project -n istio-system && oc apply -f configs/serverless-smm.yaml
+
+  # expected output
+  servicemeshmember.maistra.io/default created
+  ```
 
 #### 3.3 Installing KNative Serving
 
