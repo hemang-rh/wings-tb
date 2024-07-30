@@ -1,6 +1,10 @@
 # RHOAI Installation (imperatively)
 
-##
+## Links
+
+- [Technical Baseline Checklist](https://github.com/redhat-na-ssa/hobbyist-guide-to-rhoai/blob/main/notes/03_CHECKLIST_PROCEDURE.md)
+
+## High Level Steps
 
 - [Fix kubeadmin as an Administrator](#1-fix-kubeadmin-as-an-administrator-for-openshift-ai)
 - [Adding adminstrative user](#2-adding-administrative-user)
@@ -12,7 +16,7 @@
   - [Installing RHOS ServiceMesh](#71-installing-rhos-servicemesh)
   - [Installing RHOS Serverless](#72-installing-rhos-serverless)
 
-## Steps
+## Step Details
 
 ### 1. Fix kubeadmin as an Administrator for Openshift AI
 
