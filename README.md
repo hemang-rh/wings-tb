@@ -44,7 +44,7 @@
   ```
 
 - ```sh
-  oc create secret generic htpasswd-secret --from-file=htpasswd=scratch-wings/users.htpasswd -n openshift-config
+  oc create secret generic htpasswd-secret --from-file=htpasswd=users.htpasswd -n openshift-config
   ```
 
 - ```sh
@@ -52,14 +52,14 @@
   ```
 
 - ```sh
-  oc adm policy add-cluster-role-to-user cluster-admin <user>
+  oc adm policy add-cluster-role-to-user cluster-admin admin1
   ```
 
 Log in to the cluster as a user from your identity provider, entering the password when prompted
 NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if your clusters api endpoint does not have a trusted cert.
 
 - ```sh
-  oc login --insecure-skip-tls-verify=true -u <username> -p <password>
+  oc login --insecure-skip-tls-verify=true -u admin1 -p openshift1
   ```
 
 ### 3. Installing Web Terminal Operator
