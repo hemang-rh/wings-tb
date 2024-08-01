@@ -8,13 +8,14 @@
 
 - [Fix kubeadmin as an Administrator](#1-fix-kubeadmin-as-an-administrator-for-openshift-ai)
 - [Adding adminstrative user](#2-adding-administrative-user)
-- [Installing the Red Hat OpenShift AI Operator using the CLI](#3-installing-the-red-hat-openshift-ai-operator-using-the-cli)
-- [Installing and managing Red Hat OpenShift AI components](#4-installing-and-managing-red-hat-openshift-ai-components)
-- [Adding a CA bundle](#5-adding-a-ca-bundle)
-- [(Optional) Configuring the OpenShift AI Operator logger](#6-optional-configuring-the-openshift-ai-operator-logger)
+- [Installing Web Terminal Operator](#3-installing-web-terminal-operator)
+- [Installing the Red Hat OpenShift AI Operator using the CLI](#4-installing-the-red-hat-openshift-ai-operator-using-the-cli)
+- [Installing and managing Red Hat OpenShift AI components](#5-installing-and-managing-red-hat-openshift-ai-components)
+- [Adding a CA bundle](#6-adding-a-ca-bundle)
+- [(Optional) Configuring the OpenShift AI Operator logger](#7-optional-configuring-the-openshift-ai-operator-logger)
 - Installing KServe dependencies
-  - [Installing RHOS ServiceMesh](#71-installing-rhos-servicemesh)
-  - [Installing RHOS Serverless](#72-installing-rhos-serverless)
+  - [Installing RHOS ServiceMesh](#81-installing-rhos-servicemesh)
+  - [Installing RHOS Serverless](#82-installing-rhos-serverless)
 
 ## Step Details
 
@@ -61,7 +62,23 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
   oc login --insecure-skip-tls-verify=true -u <username> -p <password>
   ```
 
-### 3. Installing the Red Hat OpenShift AI Operator using the CLI
+### 3. Installing Web Terminal Operator
+
+![NOTE] kubeadmin is unable to create web terminals
+
+- Create a subscription object for Web Terminal
+- Apply the subscription object
+
+**Commands**
+
+- ```sh
+  oc apply -f configs/web-terminal-subscription.yaml
+
+  # expected output
+  subscription.operators.coreos.com/web-terminal configured
+  ```
+
+### 4. Installing the Red Hat OpenShift AI Operator using the CLI
 
 - Create a namespace YAML file
 - Apply the namespace object
@@ -109,7 +126,7 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
   redhat-ods-operator                                               Active
   ```
 
-### 4. Installing and managing Red Hat OpenShift AI components
+### 5. Installing and managing Red Hat OpenShift AI components
 
 - Create a DataScienceCluster object custom resource (CR) file
 - Apply DSC object
@@ -125,7 +142,7 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
   oc apply -f configs/rhoai-operator-dsci.yaml
   ```
 
-### 5. Adding a CA bundle
+### 6. Adding a CA bundle
 
 - Set environment variables to define base directories for generation of a wildcard certificate and key for the gateways
 - Set an environment variable to define the common name used by the ingress controller of your OpenShift cluster
@@ -225,7 +242,7 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
   rhods-notebooks           odh-trusted-ca-bundle   2      6m55s
   ```
 
-### 6. (Optional) Configuring the OpenShift AI Operator logger
+### 7. (Optional) Configuring the OpenShift AI Operator logger
 
 - Configure the log level from the OpenShift CLI by using the following command with the logmode value set to the log level that you want
 
@@ -242,9 +259,9 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
   oc get pods -l name=rhods-operator -o name -n redhat-ods-operator |  xargs -I {} oc logs -f {} -n redhat-ods-operator
   ```
 
-### 7. Installing KServe dependencies
+### 8. Installing KServe dependencies
 
-#### 7.1 Installing RHOS ServiceMesh
+#### 8.1 Installing RHOS ServiceMesh
 
     (Optional operators - Kiali, Tempo)
     (Deprecated operators - Jaeger, Elastricsearch)
@@ -277,7 +294,7 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
   oc get pods -n istio-system
   ```
 
-#### 7.2 Installing RHOS Serverless
+#### 8.2 Installing RHOS Serverless
 
 - [ ] Define the Serverless operator namespace, operatorgroup, and subscription
 - [ ] Define a ServiceMeshMember object in a YAML file called serverless-smm.yaml
