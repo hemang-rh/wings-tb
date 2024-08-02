@@ -153,18 +153,6 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
 - Set environment variables to define base directories for generation of a wildcard certificate and key for the gateways
 - Set an environment variable to define the common name used by the ingress controller of your OpenShift cluster
 - Set an environment variable to define the domain name used by the ingress controller of your OpenShift cluster
-- Create the required base directories for the certificate generation, based on the environment variables that you previously set
-- Create the OpenSSL configuration for generation of a wildcard certificate
-- Generate a root certificate
-- Generate a wildcard certificate signed by the root certificate
-- Verify the wildcard certificate
-- Modify DSCInitialization object to include customCABundle
-
-**Commands**
-
-- Set environment variables to define base directories for generation of a wildcard certificate and key for the gateways
-- Set an environment variable to define the common name used by the ingress controller of your OpenShift cluster
-- Set an environment variable to define the domain name used by the ingress controller of your OpenShift cluster
 
   - ```sh
     export BASE_DIR=/tmp/kserve
