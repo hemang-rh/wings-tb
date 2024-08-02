@@ -261,8 +261,10 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
 
   ```sh
   oc get configmaps --all-namespaces -l app.kubernetes.io/part-of=opendatahub-operator | grep odh-trusted-ca-bundle
+  ```
 
-  # expected output
+  ```
+    # expected output
   istio-system              odh-trusted-ca-bundle   2      10m
   redhat-ods-applications   odh-trusted-ca-bundle   2      10m
   redhat-ods-monitoring     odh-trusted-ca-bundle   2      10m
