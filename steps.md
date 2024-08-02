@@ -165,6 +165,7 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
 - ```sh
   export BASE_DIR=/tmp/kserve
   export BASE_CERT_DIR=${BASE_DIR}/certs
+
   ```
 
 - ```sh
@@ -176,6 +177,10 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
   ```
 
 - ```sh
+  echo $BASE_DIR
+  echo $BASE_CERT_DIR
+  echo $COMMON_NAME
+  echo $DOMAIN_NAME
   mkdir ${BASE_DIR}
   mkdir ${BASE_CERT_DIR}
   ```
