@@ -73,7 +73,8 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
 
 - ```sh
   oc apply -f configs/web-terminal-subscription.yaml
-
+  ```
+  ```
   # expected output
   subscription.operators.coreos.com/web-terminal configured
   ```
@@ -107,19 +108,24 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
 
   ```sh
   oc get operators
+  ```
 
+  ```
   # expected output
-  NAME                                        AGE
-  devworkspace-operator.openshift-operators   21m
-  rhods-operator.redhat-ods-operator          7s
-  web-terminal.openshift-operators            22m
+
+  NAME AGE
+  devworkspace-operator.openshift-operators 21m
+  rhods-operator.redhat-ods-operator 7s
+  web-terminal.openshift-operators 22m
   ```
 
 - Check the created projects `redhat-ods-applications|redhat-ods-monitoring|redhat-ods-operator`
 
   ```sh
   oc get projects | egrep redhat-ods
+  ```
 
+  ```
   # expected output
   redhat-ods-applications                                           Active
   redhat-ods-monitoring                                             Active
@@ -422,6 +428,10 @@ extensionProviders:
 - [ ] Create the EnvoyFilter resource in the namespace for your OpenShift Service Mesh instance
 - [ ] Check that the AuthorizationPolicy resource was successfully created
 - [ ] Check that the EnvoyFilter resource was successfully created
+
+```
+
+```
 
 ```
 
