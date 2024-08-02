@@ -23,11 +23,9 @@
 
 - Create a cluster role binding so that OpenShift AI will recognize `kubeadmin` as a `cluster-admin`
 
-**Commands**
-
-- ```sh
-  oc apply -f configs/fix-kubeadmin.yaml
-  ```
+  - ```sh
+    oc apply -f configs/fix-kubeadmin.yaml
+    ```
 
 ### 2. Adding administrative user
 
@@ -37,30 +35,27 @@
 - Apply the resource to the default OAuth configuration to add the identity provider
 - As kubeadmin, assign the cluster-admin role to perform administrator level tasks
 
-**Commands**
+  - ```sh
+    htpasswd -c -B -b users.htpasswd admin1 openshift1
+    ```
 
-- ```sh
-  htpasswd -c -B -b users.htpasswd admin1 openshift1
-  ```
+  - ```sh
+    oc create secret generic htpasswd-secret --from-file=htpasswd=users.htpasswd -n openshift-config
+    ```
 
-- ```sh
-  oc create secret generic htpasswd-secret --from-file=htpasswd=users.htpasswd -n openshift-config
-  ```
+  - ```sh
+    oc apply -f configs/htpasswd-cr.yaml
+    ```
 
-- ```sh
-  oc apply -f configs/htpasswd-cr.yaml
-  ```
+  - ```sh
+    oc adm policy add-cluster-role-to-user cluster-admin admin1
+    ```
 
-- ```sh
-  oc adm policy add-cluster-role-to-user cluster-admin admin1
-  ```
-
-Log in to the cluster as a user from your identity provider, entering the password when prompted
-NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if your clusters api endpoint does not have a trusted cert.
-
-- ```sh
-  oc login --insecure-skip-tls-verify=true -u admin1 -p openshift1
-  ```
+- Log in to the cluster as a user from your identity provider, entering the password when prompted.  
+  NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if your clusters api endpoint does not have a trusted cert.
+  - ```sh
+    oc login --insecure-skip-tls-verify=true -u admin1 -p openshift1
+    ```
 
 ### 3. Installing Web Terminal Operator
 
@@ -69,15 +64,13 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
 - Create a subscription object for Web Terminal
 - Apply the subscription object
 
-**Commands**
-
-- ```sh
-  oc apply -f configs/web-terminal-subscription.yaml
-  ```
-  ```
-  # expected output
-  subscription.operators.coreos.com/web-terminal configured
-  ```
+  - ```sh
+    oc apply -f configs/web-terminal-subscription.yaml
+    ```
+  - ```sh
+    # expected output
+    subscription.operators.coreos.com/web-terminal configured
+    ```
 
 ### 4. Installing the Red Hat OpenShift AI Operator using the CLI
 
@@ -88,49 +81,47 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
 - Create a Subscription object CR file
 - Apply the Subscription object
 
-**Commands**
+  - ```sh
+    oc create -f configs/rhoai-operator-ns.yaml
+    ```
 
-- ```sh
-  oc create -f configs/rhoai-operator-ns.yaml
-  ```
+  - ```sh
+    oc create -f configs/rhoai-operator-group.yaml
+    ```
 
-- ```sh
-  oc create -f configs/rhoai-operator-group.yaml
-  ```
-
-- ```sh
-  oc create -f configs/rhoai-operator-subscription.yaml
-  ```
+  - ```sh
+    oc create -f configs/rhoai-operator-subscription.yaml
+    ```
 
 **Verification**
 
 - Check the installed operators for `rhods-operator.redhat-ods-operator`
 
-  ```sh
-  oc get operators
-  ```
+  - ```sh
+    oc get operators
+    ```
 
-  ```
-  # expected output
-
-  NAME AGE
-  devworkspace-operator.openshift-operators 21m
-  rhods-operator.redhat-ods-operator 7s
-  web-terminal.openshift-operators 22m
-  ```
+    ```sh
+    # expected output
+    NAME AGE
+    devworkspace-operator.openshift-operators 21m
+    rhods-operator.redhat-ods-operator 7s
+    web-terminal.openshift-operators 22m
+    ```
 
 - Check the created projects `redhat-ods-applications|redhat-ods-monitoring|redhat-ods-operator`
 
-  ```sh
-  oc get projects | egrep redhat-ods
-  ```
+  - ```sh
+    oc get projects | egrep redhat-ods
+    ```
 
-  ```
-  # expected output
-  redhat-ods-applications                                           Active
-  redhat-ods-monitoring                                             Active
-  redhat-ods-operator                                               Active
-  ```
+    ```
+    # expected output
+
+    redhat-ods-applications Active
+    redhat-ods-monitoring Active
+    redhat-ods-operator Active
+    ```
 
 ### 5. Installing and managing Red Hat OpenShift AI components
 
@@ -138,15 +129,13 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
 - Apply DSC object
 - Apply default-dsci object
 
-**Commands**
+  - ```sh
+    oc create -f configs/rhoai-operator-dcs.yaml
+    ```
 
-- ```sh
-  oc create -f configs/rhoai-operator-dcs.yaml
-  ```
-
-- ```sh
-  oc apply -f configs/rhoai-operator-dsci.yaml
-  ```
+  - ```sh
+    oc apply -f configs/rhoai-operator-dsci.yaml
+    ```
 
 ### 6. Adding a CA bundle
 
@@ -253,24 +242,26 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
 
 - Verify the `odh-trusted-ca-bundle` configmap for your root signed cert in the `odh-ca-bundle.crt:` section
 
-  ```sh
-  oc get cm/odh-trusted-ca-bundle -o yaml -n redhat-ods-applications
-  ```
+  - ```sh
+    oc get cm/odh-trusted-ca-bundle -o yaml -n redhat-ods-applications
+    ```
 
 - Run the following command to verify that all non-reserved namespaces contain the odh-trusted-ca-bundle ConfigMap
 
-  ```sh
-  oc get configmaps --all-namespaces -l app.kubernetes.io/part-of=opendatahub-operator | grep odh-trusted-ca-bundle
-  ```
+  - ```sh
+    oc get configmaps --all-namespaces -l app.kubernetes.io/part-of=opendatahub-operator | grep odh-trusted-ca-bundle
+    ```
 
-  ```
+    ```
     # expected output
-  istio-system              odh-trusted-ca-bundle   2      10m
-  redhat-ods-applications   odh-trusted-ca-bundle   2      10m
-  redhat-ods-monitoring     odh-trusted-ca-bundle   2      10m
-  redhat-ods-operator       odh-trusted-ca-bundle   2      10m
-  rhods-notebooks           odh-trusted-ca-bundle   2      6m55s
-  ```
+
+    istio-system odh-trusted-ca-bundle 2 10m
+    redhat-ods-applications odh-trusted-ca-bundle 2 10m
+    redhat-ods-monitoring odh-trusted-ca-bundle 2 10m
+    redhat-ods-operator odh-trusted-ca-bundle 2 10m
+    rhods-notebooks odh-trusted-ca-bundle 2 6m55s
+
+    ```
 
 ### 7. (Optional) Configuring the OpenShift AI Operator logger
 
@@ -450,6 +441,18 @@ extensionProviders:
 - [ ] Create the EnvoyFilter resource in the namespace for your OpenShift Service Mesh instance
 - [ ] Check that the AuthorizationPolicy resource was successfully created
 - [ ] Check that the EnvoyFilter resource was successfully created
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
 
 ```
 
