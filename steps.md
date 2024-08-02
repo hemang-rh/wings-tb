@@ -162,75 +162,104 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
 
 **Commands**
 
-- ```sh
-  export BASE_DIR=/tmp/kserve
-  export BASE_CERT_DIR=${BASE_DIR}/certs
+- Set environment variables to define base directories for generation of a wildcard certificate and key for the gateways
+- Set an environment variable to define the common name used by the ingress controller of your OpenShift cluster
+- Set an environment variable to define the domain name used by the ingress controller of your OpenShift cluster
 
-  ```
+  - ```sh
+    export BASE_DIR=/tmp/kserve
+    export BASE_CERT_DIR=${BASE_DIR}/certs
+    ```
 
-- ```sh
-  export COMMON_NAME=$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' | awk -F'.' '{print $(NF-1)"."$NF}')
-  ```
+  - ```sh
+    export COMMON_NAME=$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' | awk -F'.' '{print $(NF-1)"."$NF}')
+    ```
 
-- ```sh
-  export DOMAIN_NAME=$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}')
-  ```
+  - ```sh
+    export DOMAIN_NAME=$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}')
+    ```
 
-- ```sh
-  echo $BASE_DIR
-  echo $BASE_CERT_DIR
-  echo $COMMON_NAME
-  echo $DOMAIN_NAME
-  mkdir ${BASE_DIR}
-  mkdir ${BASE_CERT_DIR}
-  ```
+- Create the required base directories for the certificate generation, based on the environment variables that you previously set
 
-- ```sh
-  cat <<EOF> ${BASE_DIR}/openssl-san.config
-  [ req ]
-  distinguished_name = req
-  [ san ]
-  subjectAltName = DNS:*.${DOMAIN_NAME}
-  EOF
-  ```
+  - ```sh
+    echo $BASE_DIR
+    echo $BASE_CERT_DIR
+    echo $COMMON_NAME
+    echo $DOMAIN_NAME
+    mkdir ${BASE_DIR}
+    mkdir ${BASE_CERT_DIR}
+    ```
 
-- ```sh
-  openssl req -x509 -sha256 -nodes -days 3650 -newkey rsa:2048 \
-  -subj "/O=Example Inc./CN=${COMMON_NAME}" \
-  -keyout $BASE_DIR/root.key \
-  -out $BASE_DIR/root.crt
-  ```
+- Create the OpenSSL configuration for generation of a wildcard certificate
 
-- ```sh
-  openssl req -x509 -newkey rsa:2048 \
-  -sha256 -days 3560 -nodes \
-  -subj "/CN=${COMMON_NAME}/O=Example Inc." \
-  -extensions san -config ${BASE_DIR}/openssl-san.config \
-  -CA $BASE_DIR/root.crt \
-  -CAkey $BASE_DIR/root.key \
-  -keyout $BASE_DIR/wildcard.key  \
-  -out $BASE_DIR/wildcard.crt
-  ```
+  - ```sh
+    cat <<EOF> ${BASE_DIR}/openssl-san.config
+    [ req ]
+    distinguished_name = req
+    [ san ]
+    subjectAltName = DNS:*.${DOMAIN_NAME}
+    EOF
+    ```
 
-- ```sh
-  openssl x509 -in ${BASE_DIR}/wildcard.crt -text
-  ```
+  - ```sh
+    cat $BASE_DIR/openssl-san.config
+    ```
 
-- ```sh
-  openssl verify -CAfile ${BASE_DIR}/root.crt ${BASE_DIR}/wildcard.crt
+- Generate a root certificate
 
-  # expected output
-  /tmp/kserve/wildcard.crt: OK
-  ```
+  - ```sh
+    openssl req -x509 -sha256 -nodes -days 3650 -newkey rsa:2048 \
+    -subj "/O=Example Inc./CN=${COMMON_NAME}" \
+    -keyout $BASE_DIR/root.key \
+    -out $BASE_DIR/root.crt
+    ```
 
-- ```yaml
-  spec:
+  - ```sh
+      ls $BASE_DIR/root*
+    ```
+
+- Generate a wildcard certificate signed by the root certificate
+
+  - ```sh
+    openssl req -x509 -newkey rsa:2048 \
+    -sha256 -days 3560 -nodes \
+    -subj "/CN=${COMMON_NAME}/O=Example Inc." \
+    -extensions san -config ${BASE_DIR}/openssl-san.config \
+    -CA $BASE_DIR/root.crt \
+    -CAkey $BASE_DIR/root.key \
+    -keyout $BASE_DIR/wildcard.key  \
+    -out $BASE_DIR/wildcard.crt
+    ```
+
+  - ```sh
+    openssl x509 -in ${BASE_DIR}/wildcard.crt -text
+    ```
+
+- Verify the wildcard certificate
+
+  - ```sh
+    openssl verify -CAfile ${BASE_DIR}/root.crt ${BASE_DIR}/wildcard.crt
+    ```
+
+    ```
+    # expected output
+    /tmp/kserve/wildcard.crt: OK
+    ```
+
+- Copy the root.crt to paste into default-dcsi yaml
+  - ```sh
+    cat ${BASE_DIR}/root.crt
+    ```
+    ```yaml
+    # Section in default.dsci yaml that needs to be updated
+    spec:
     trustedCABundle:
       customCABundle: |
         -----BEGIN CERTIFICATE-----
+        # root.crt value goes here
         -----END CERTIFICATE-----
       managementState: Managed
-  ```
+    ```
 
 **Verification**
 
@@ -433,6 +462,18 @@ extensionProviders:
 - [ ] Create the EnvoyFilter resource in the namespace for your OpenShift Service Mesh instance
 - [ ] Check that the AuthorizationPolicy resource was successfully created
 - [ ] Check that the EnvoyFilter resource was successfully created
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
 
 ```
 
