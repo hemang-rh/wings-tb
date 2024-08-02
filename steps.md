@@ -276,18 +276,16 @@ NOTE: You may need to add the parameter `--insecure-skip-tls-verify=true` if you
 
 - Configure the log level from the OpenShift CLI by using the following command with the logmode value set to the log level that you want
 
-**Commands**
-
-- ```sh
-  oc patch dsci default-dsci -p '{"spec":{"devFlags":{"logmode":"development"}}}' --type=merge
-  ```
+  - ```sh
+    oc patch dsci default-dsci -p '{"spec":{"devFlags":{"logmode":"development"}}}' --type=merge
+    ```
 
 **Verification**
 
 - Viewing the OpenShift AI Operator log
-  ```sh
-  oc get pods -l name=rhods-operator -o name -n redhat-ods-operator |  xargs -I {} oc logs -f {} -n redhat-ods-operator
-  ```
+  - ```sh
+    oc get pods -l name=rhods-operator -o name -n redhat-ods-operator |  xargs -I {} oc logs -f {} -n redhat-ods-operator
+    ```
 
 ### 8. Installing KServe dependencies
 
