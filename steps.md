@@ -285,11 +285,11 @@
     (Optional operators - Kiali, Tempo)
     (Deprecated operators - Jaeger, Elastricsearch)
 
-- [ ] Create the required namespace for Red Hat OpenShift Service Mesh
-- [ ] Define the required subscription for the Red Hat OpenShift Service Mesh Operator
-- [ ] Create the Service Mesh subscription to install the operator
-- [ ] Define a ServiceMeshControlPlane object in a YAML file
-- [ ] Create the servicemesh control plane object
+- Create the required namespace for Red Hat OpenShift Service Mesh
+- Define the required subscription for the Red Hat OpenShift Service Mesh Operator
+- Create the Service Mesh subscription to install the operator
+- Define a ServiceMeshControlPlane object in a YAML file
+- Create the servicemesh control plane object
 
   - ```sh
     oc create ns istio-system
@@ -305,7 +305,7 @@
 
 **Verification**
 
-- [ ] Verify the pods are running for the service mesh control plane, ingress gateway, and egress gateway
+- Verify the pods are running for the service mesh control plane, ingress gateway, and egress gateway
 
   - ```sh
     oc get pods -n istio-system
@@ -313,9 +313,9 @@
 
 #### 8.2 Installing RHOS Serverless
 
-- [ ] Define the Serverless operator namespace, operatorgroup, and subscription
-- [ ] Define a ServiceMeshMember object in a YAML file called serverless-smm.yaml
-- [ ] Create subscription
+- Define the Serverless operator namespace, operatorgroup, and subscription
+- Define a ServiceMeshMember object in a YAML file called serverless-smm.yaml
+- Create subscription
 
 - ```sh
   oc create -f configs/serverless-operator.yaml
