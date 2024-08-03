@@ -285,33 +285,31 @@
     (Optional operators - Kiali, Tempo)
     (Deprecated operators - Jaeger, Elastricsearch)
 
-- Create the required namespace for Red Hat OpenShift Service Mesh
-- Define the required subscription for the Red Hat OpenShift Service Mesh Operator
-- Create the Service Mesh subscription to install the operator
-- Define a ServiceMeshControlPlane object in a YAML file
-- Create the servicemesh control plane object
+- [ ] Create the required namespace for Red Hat OpenShift Service Mesh
+- [ ] Define the required subscription for the Red Hat OpenShift Service Mesh Operator
+- [ ] Create the Service Mesh subscription to install the operator
+- [ ] Define a ServiceMeshControlPlane object in a YAML file
+- [ ] Create the servicemesh control plane object
 
-**Commands**
+  - ```sh
+    oc create ns istio-system
+    ```
 
-- ```sh
-  oc create ns istio-system
-  ```
+  - ```sh
+    oc create -f configs/servicemesh-subscription.yaml
+    ```
 
-- ```sh
-  oc create -f configs/servicemesh-subscription.yaml
-  ```
-
-- ```sh
-  oc create -f configs/servicemesh-scmp.yaml
-  ```
+  - ```sh
+    oc create -f configs/servicemesh-scmp.yaml
+    ```
 
 **Verification**
 
-- Verify the pods are running for the service mesh control plane, ingress gateway, and egress gateway
+- [ ] Verify the pods are running for the service mesh control plane, ingress gateway, and egress gateway
 
-  ```sh
-  oc get pods -n istio-system
-  ```
+  - ```sh
+    oc get pods -n istio-system
+    ```
 
 #### 8.2 Installing RHOS Serverless
 
@@ -319,20 +317,24 @@
 - [ ] Define a ServiceMeshMember object in a YAML file called serverless-smm.yaml
 - [ ] Create subscription
 
-**Commands**
-
 - ```sh
   oc create -f configs/serverless-operator.yaml
+  ```
 
+  ```sh
   # expected output
+
   namespace/openshift-serverless created
   operatorgroup.operators.coreos.com/serverless-operator created
   subscription.operators.coreos.com/serverless-operator created
+
   ```
 
 - ```sh
   oc project -n istio-system && oc apply -f configs/serverless-smm.yaml
+  ```
 
+  ```
   # expected output
   servicemeshmember.maistra.io/default created
   ```
@@ -345,8 +347,8 @@
 - [ ] Define a KnativeServing object in a YAML file
 - [ ] Create the KnativeServing object in the specified knative-serving namespace
 - [ ] Verification
-  - [ ] Review the default ServiceMeshMemberRoll object in the istio-system namespace and confirm that it includes the knative-serving namespace
-  - [ ] Verify creation of the Knative Serving instance
+- [ ] Review the default ServiceMeshMemberRoll object in the istio-system namespace and confirm that it includes the knative-serving namespace
+- [ ] Verify creation of the Knative Serving instance
 
 #### 3.4 Creating secure gateways for Knative Serving
 
@@ -424,12 +426,12 @@ enablePrometheusMerge: true
 extensionProviders:
 
 - envoyExtAuthzGrpc:
-  port: 50051
-  service: authorino-authorino-authorization.opendatahub-auth-provider.svc.cluster.local
-  name: opendatahub-auth-provider
-  ingressControllerMode: "OFF"
-  rootNamespace: istio-system
-  trustDomain: null%
+port: 50051
+service: authorino-authorino-authorization.opendatahub-auth-provider.svc.cluster.local
+name: opendatahub-auth-provider
+ingressControllerMode: "OFF"
+rootNamespace: istio-system
+trustDomain: null%
 
 ```
 
@@ -441,6 +443,14 @@ extensionProviders:
 - [ ] Create the EnvoyFilter resource in the namespace for your OpenShift Service Mesh instance
 - [ ] Check that the AuthorizationPolicy resource was successfully created
 - [ ] Check that the EnvoyFilter resource was successfully created
+
+```
+
+```
+
+```
+
+```
 
 ```
 
