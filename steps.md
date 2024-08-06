@@ -295,12 +295,32 @@
     oc create ns istio-system
     ```
 
+    ```sh
+    # expected output
+    namespaces "istio-system" already exists
+    ```
+
   - ```sh
     oc create -f configs/servicemesh-subscription.yaml
     ```
 
+    ```sh
+    # expected output
+    subscription.operators.coreos.com/servicemeshoperator created
+
+    Note: Wait for Service Mesh opertor to be installed before creating servicemesh control plane object. If you try to create before that you will get below error
+
+    # error
+    error: resource mapping not found for name: "minimal" namespace: "istio-system" from "configs/servicemesh-scmp.yaml": no matches for kind "ServiceMeshControlPlane" in version "maistra.io/v2" ensure CRDs are installed first
+    ```
+
   - ```sh
     oc create -f configs/servicemesh-scmp.yaml
+    ```
+
+    ```sh
+    # expected output
+    servicemeshcontrolplane.maistra.io/minimal created
     ```
 
 **Verification**
@@ -309,6 +329,13 @@
 
   - ```sh
     oc get pods -n istio-system
+    ```
+
+    ```sh
+    # expected output
+    istio-egressgateway-f9b5cf49c-c7fst    1/1     Running   0          59s
+    istio-ingressgateway-c69849d49-fjswg   1/1     Running   0          59s
+    istiod-minimal-5c68bf675d-whrns        1/1     Running   0          68s
     ```
 
 #### 8.2 Installing RHOS Serverless
