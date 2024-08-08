@@ -19,6 +19,8 @@
 - [Creating KNative serving instance](#11-creating-a-knative-serving-instance)
 - [Creating secure gateways for KNative serving](#12-creating-secure-gateways-for-knative-serving)
 - [Manually adding Authorization provider](#13-manually-adding-authorizaiton-provider)
+- [Configuring an OpenShift Service Mesh instance to use Authorino](#14-configuring-an-openshift-service-mesh-instance-to-use-authorino)
+- [Configuring authorization for KServe](#15-configuring-authorization-for-kserve)
 
 ## Step Details
 
@@ -597,7 +599,7 @@ There are two objects that are in an error state after installation at this poin
 
 ### 14. Configuring an OpenShift Service Mesh instance to use Authorino
 
-> Why? you must configure your OpenShift Service Mesh instance to use Authorino as an authorization provider
+> Why? you must configure your OpenShift Service Mesh instance to use Authorino as an authorization provider  
 > [More Info](https://access.redhat.com/documentation/en-us/red_hat_openshift_ai_self-managed/2.10/html/serving_models/serving-large-models_serving-large-models#configuring-service-mesh-instance-to-use-authorino_serving-large-models)
 
 - Create a new YAML file with the following contents servicemesh-smcp-patch.yaml
