@@ -528,6 +528,74 @@ There are two objects that are in an error state after installation at this poin
     knative-serving   knative-local-gateway     2m
     ```
 
+### 12. Manually adding Authorizaiton provider
+
+> Why? Adding an authorization provider allows you to enable token authorization for models that you deploy on the platform, which ensures that only authorized parties can make inference requests to the models. [More Info](https://access.redhat.com/documentation/en-us/red_hat_openshift_ai_self-managed/2.10/html/serving_models/serving-large-models_serving-large-models#manually-adding-an-authorization-provider_serving-large-models)
+
+- Create subscription for the Authorino Operator
+- Apply the Authorino operator
+
+  - ```sh
+    oc create -f configs/authorino-subscription.yaml
+    ```
+    ```
+    # expected output
+    subscription.operators.coreos.com/authorino-operator created
+    ```
+
+- Create a namespace to install the Authorino instance
+
+  - ```sh
+    oc create ns redhat-ods-applications-auth-provider
+    ```
+    ```
+    # expected output
+    namespace/redhat-ods-applications-auth-provider created
+    ```
+
+- Enroll the new namespace for the Authorino instance in your existing OpenShift Service Mesh instance
+- Create the ServiceMeshMember resource on your cluster
+
+  - ```sh
+    oc create -f configs/authorino-smm.yaml
+    ```
+    ```
+    # expected output
+    servicemeshmember.maistra.io/default created
+    ```
+
+- Configure an Authorino instance,
+- Create the Authorino resource on your cluster
+
+  - ```sh
+    oc create -f configs/authorino-instance.yaml
+    ```
+    ```
+    # expected output
+    authorino.operator.authorino.kuadrant.io/authorino created
+    ```
+
+- Patch the Authorino deployment to inject an Istio sidecar, which makes the Authorino instance part of your OpenShift Service Mesh instance
+
+  - ```sh
+    oc patch deployment authorino -n redhat-ods-applications-auth-provider -p '{"spec": {"template":{"metadata":{"labels":{"sidecar.istio.io/inject":"true"}}}} }'
+    ```
+    ```
+    # expected output
+    deployment.apps/authorino patched
+    ```
+
+- Check the pods (and containers) that are running in the namespace that you created for the Authorino instance, as shown in the following example
+
+  - ```sh
+    oc get pods -n redhat-ods-applications-auth-provider -o="custom-columns=NAME:.metadata.name,STATUS:.status.phase,CONTAINERS:.spec.containers[*].name"
+    ```
+    ```
+    # expected output
+    NAME                         STATUS    CONTAINERS
+    authorino-75585d99bd-vh65n   Running   authorino,istio-proxy
+    ```
+
 #### 3.5 Installing Kserve
 
 - [ ] Set serviceMesh component as "managementState: Unmanaged" (inside default-dsci)
