@@ -528,7 +528,8 @@ There are two objects that are in an error state after installation at this poin
 
 ### 13. Manually adding Authorizaiton provider
 
-> Why? Adding an authorization provider allows you to enable token authorization for models that you deploy on the platform, which ensures that only authorized parties can make inference requests to the models. [More Info](https://access.redhat.com/documentation/en-us/red_hat_openshift_ai_self-managed/2.10/html/serving_models/serving-large-models_serving-large-models#manually-adding-an-authorization-provider_serving-large-models)
+> Why? Adding an authorization provider allows you to enable token authorization for models that you deploy on the platform, which ensures that only authorized parties can make inference requests to the models.  
+> [More Info](https://access.redhat.com/documentation/en-us/red_hat_openshift_ai_self-managed/2.10/html/serving_models/serving-large-models_serving-large-models#manually-adding-an-authorization-provider_serving-large-models)
 
 - Create subscription for the Authorino Operator
 - Apply the Authorino operator
@@ -594,6 +595,99 @@ There are two objects that are in an error state after installation at this poin
     authorino-75585d99bd-vh65n   Running   authorino,istio-proxy
     ```
 
+### 14. Configuring an OpenShift Service Mesh instance to use Authorino
+
+> Why? you must configure your OpenShift Service Mesh instance to use Authorino as an authorization provider
+> [More Info](https://access.redhat.com/documentation/en-us/red_hat_openshift_ai_self-managed/2.10/html/serving_models/serving-large-models_serving-large-models#configuring-service-mesh-instance-to-use-authorino_serving-large-models)
+
+- Create a new YAML file with the following contents servicemesh-smcp-patch.yaml
+- Use the oc patch command to apply the YAML file to your OpenShift Service Mesh instance
+
+  - ```sh
+    oc patch smcp minimal --type merge -n istio-system --patch-file configs/files/servicemesh-smcp-patch.yaml
+    ```
+    ```
+    # expected output
+    servicemeshcontrolplane.maistra.io/minimal patched
+    ```
+
+- Inspect the ConfigMap object for your OpenShift Service Mesh instance
+  - ```sh
+    oc get configmap istio-minimal -n istio-system --output=jsonpath={.data.mesh}
+    ```
+    ```
+    # expected output
+    defaultConfig:
+    discoveryAddress: istiod-minimal.istio-system.svc:15012
+    proxyMetadata:
+        ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+        ISTIO_META_DNS_CAPTURE: "true"
+        PROXY_XDS_VIA_AGENT: "true"
+    terminationDrainDuration: 35s
+    tracing: {}
+    dnsRefreshRate: 300s
+    enablePrometheusMerge: true
+    extensionProviders:
+    - envoyExtAuthzGrpc:
+        port: 50051
+        service: authorino-authorino-authorization.redhat-ods-applicatiions-auth-provider.svc.cluster.local
+    name: redhat-ods-applications-auth-provider
+    ingressControllerMode: "OFF"
+    rootNamespace: istio-system
+    trustDomain: null
+    ```
+- Confirm that you see output that the Authorino instance has been successfully added as an extension provider
+
+### 15. Configuring authorization for KServe
+
+> Why? you must create a global AuthorizationPolicy resource that is applied to the KServe predictor pods that are created when you deploy a model. In addition, to account for the multiple network hops that occur when you make an inference request to a model, you must create an EnvoyFilter resource that continually resets the HTTP host header to the one initially included in the inference request.  
+> [More Info](https://access.redhat.com/documentation/en-us/red_hat_openshift_ai_self-managed/2.10/html/serving_models/serving-large-models_serving-large-models#configuring-authorization-for-kserve_serving-large-models)
+
+- Create a new YAML file
+- Create the AuthorizationPolicy resource in the namespace for your OpenShift Service Mesh instance
+
+  - ```sh
+    oc create -n istio-system -f configs/servicemesh-authorization-policy.yaml
+    ```
+    ```
+    # expected output
+    authorizationpolicy.security.istio.io/kserve-predictor created
+    ```
+
+- Create another new YAML file for EnvoyFilter: The EnvoyFilter resource continually resets the HTTP host header to the one initially included in any inference request.
+- Create the EnvoyFilter resource in the namespace for your OpenShift Service Mesh instance
+
+  - ```sh
+    oc create -n istio-system -f configs/servicemesh-envoyfilter.yaml
+    ```
+    ```
+    # expected output
+    envoyfilter.networking.istio.io/activator-host-header created
+    ```
+
+- Check that the AuthorizationPolicy resource was successfully created.
+
+  - ```sh
+    oc get authorizationpolicies -n istio-system
+    ```
+    ```
+    # expected output
+    NAME               AGE
+    kserve-predictor   62s
+    ```
+
+- Check that the EnvoyFilter resource was successfully created.
+  - ```sh
+    oc get envoyfilter -n istio-system
+    ```
+    ```
+    # example output
+    NAME                                AGE
+    activator-host-header               101s
+    metadata-exchange-1.6-minimal       56m
+    tcp-metadata-exchange-1.6-minimal   56m
+    ```
+
 #### 3.5 Installing Kserve
 
 - [ ] Set serviceMesh component as "managementState: Unmanaged" (inside default-dsci)
@@ -619,18 +713,6 @@ serving:
 managementState: Unmanaged
 
 ```
-
-#### 3.6 Manually adding an authorization provider
-
-- [ ] Create subscription for the Authorino Operator
-- [ ] Install the Authorino operator
-- [ ] Create a namespace to install the Authorino instance
-- [ ] Enroll the new namespace for the Authorino instance in your existing OpenShift Service Mesh instance
-- [ ] Create the ServiceMeshMember resource on your cluster
-- [ ] Configure an Authorino instance, create a new YAML file as shown
-- [ ] Create the Authorino resource on your cluster
-- [ ] Patch the Authorino deployment to inject an Istio sidecar, which makes the Authorino instance part of your OpenShift Service Mesh instance
-- [ ] Check the pods (and containers) that are running in the namespace that you created for the Authorino instance, as shown in the following example
 
 #### 3.7 Configuring an OpenShift Service Mesh instance to use Authorino
 
@@ -672,99 +754,3 @@ extensionProviders:
 - [ ] Create the EnvoyFilter resource in the namespace for your OpenShift Service Mesh instance
 - [ ] Check that the AuthorizationPolicy resource was successfully created
 - [ ] Check that the EnvoyFilter resource was successfully created
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
