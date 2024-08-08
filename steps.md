@@ -690,69 +690,93 @@ There are two objects that are in an error state after installation at this poin
     tcp-metadata-exchange-1.6-minimal   56m
     ```
 
-#### 3.5 Installing Kserve
+### Enabling GPU support in OpenShift AI
 
-- [ ] Set serviceMesh component as "managementState: Unmanaged" (inside default-dsci)
+> [More Info](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/2.10/html/installing_and_uninstalling_openshift_ai_self-managed/enabling-gpu-support_install)
 
-```
+---
 
-spec:
-serviceMesh:
-managementState: Unmanaged
+### 16. Adding a GPU node to an existing OpenShift Container Platform cluster
 
-```
+> [More Info](https://docs.redhat.com/en/documentation/openshift_container_platform/4.15/html/machine_management/managing-compute-machines-with-the-machine-api#nvidia-gpu-aws-adding-a-gpu-node_creating-machineset-aws)
 
-- [ ] Set kserve component as "managementState: Managed" (inside default-dsc)
-- [ ] Set serving component within kserve component as "managementState: Unmanaged" (inside default-dsc)
+- View existing nodes
 
-```
+  - ```sh
+    oc get nodes
+    ```
+    ```
+    # expected output
+    NAME                                        STATUS   ROLES                         AGE     VERSION
+    ip-10-x-xx-xxx.us-east-x.compute.internal   Ready    control-plane,master,worker   5h11m   v1.28.10+a2c84a5
+    ```
 
-spec:
-components:
-kserve:
-managementState: Managed
-serving:
-managementState: Unmanaged
+- View the machine sets that exist in the openshift-machine-api namespace
 
-```
+  - ```sh
+    oc get machinesets -n openshift-machine-api
+    ```
+    ```
+    # expected output
+    NAME                                    DESIRED   CURRENT   READY   AVAILABLE   AGE
+    cluster-xxxxx-xxxxx-worker-us-east-xc   0         0                             5h13m
+    ```
 
-#### 3.7 Configuring an OpenShift Service Mesh instance to use Authorino
+- View the machines that exist in the openshift-machine-api namespace
 
-- [ ] Create a new YAML file to patch the ServiceMesh Control Plane
-- [ ] Use the oc patch command to apply the YAML file to your OpenShift Service Mesh instance
-- [ ] Verification
+  - ```sh
+    oc get machines -n openshift-machine-api | egrep worker
+    ```
 
-- [ ] Inspect the ConfigMap object for your OpenShift Service Mesh instance (should look similar to below)
+- Make a copy of one of the existing compute MachineSet definitions and output the result to a YAML file
+  - ```sh
+    oc get machineset -n openshift-machine-api
+    ```
+  - ```sh
+    oc get machineset hs-wings-mset -n openshift-machine-api -o yaml > scratch/machineset.yaml
+    ```
 
-```
+> Update the following fields:
 
-defaultConfig:
-discoveryAddress: istiod-data-science-smcp.istio-system.svc:15012
-proxyMetadata:
-ISTIO_META_DNS_AUTO_ALLOCATE: "true"
-ISTIO_META_DNS_CAPTURE: "true"
-PROXY_XDS_VIA_AGENT: "true"
-terminationDrainDuration: 35s
-tracing: {}
-dnsRefreshRate: 300s
-enablePrometheusMerge: true
-extensionProviders:
+- > .spec.replicas from 0 to 2
+- > .metadata.name to a name containing gpu.
+- > .spec.selector.matchLabels["machine.openshift.io/cluster-api-machineset"] to match the new .metadata.name.
+- > .spec.template.metadata.labels["machine.openshift.io/cluster-api-machineset"] to match the new .metadata.name.
+- > .spec.template.spec.providerSpec.value.instanceType to g4dn.4xlarge.
 
-- envoyExtAuthzGrpc:
-  port: 50051
-  service: authorino-authorino-authorization.opendatahub-auth-provider.svc.cluster.local
-  name: opendatahub-auth-provider
-  ingressControllerMode: "OFF"
-  rootNamespace: istio-system
-  trustDomain: null%
+> Remove the following fields
 
-```
+- > uid
+- > generation
 
-### 3.8 Configuring authorization for KServe
+- Apply the configuration to create the gpu machine
 
-- [ ] Create a new YAML file for
-- [ ] Create the AuthorizationPolicy resource in the namespace for your OpenShift Service Mesh instance
-- [ ] Create another new YAML file with the following contents:
-- [ ] Create the EnvoyFilter resource in the namespace for your OpenShift Service Mesh instance
-- [ ] Check that the AuthorizationPolicy resource was successfully created
-- [ ] Check that the EnvoyFilter resource was successfully created
+  - ```sh
+    oc apply -f scratch/machineset.yaml
+    ```
+    ```
+    # expected output
+    machineset.machine.openshift.io/cluster-xxxx-xxxx-worker-us-east-gpu created
+    ```
+
+- Verify the gpu machineset you created is running
+
+  - ```sh
+    oc -n openshift-machine-api get machinesets | grep gpu
+    ```
+    ```
+    # expected output
+    cluster-xxxxx-xxxxx-worker-us-east-xc-gpu   2         2         2       2           6m37s
+    ```
+
+- View the Machine object that the machine set created
+  - ```sh
+    oc -n openshift-machine-api get machines | grep gpu
+    ```
+    ```
+    # expected output
+    cluster-xxxxx-xxxxx-worker-us-east-xc-gpu-29whc   Running   g4dn.4xlarge   us-east-2   us-east-2c   7m59s
+    cluster-xxxxx-xxxxx-worker-us-east-xc-gpu-nr59d   Running   g4dn.4xlarge   us-east-2   us-east-2c   7m59s
+    ```
+
+### 17. Deploying the Node Feature Discovery operator
