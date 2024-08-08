@@ -6,20 +6,27 @@
 
 ## High Level Steps
 
-- [Fix kubeadmin as an Administrator](#1-fix-kubeadmin-as-an-administrator-for-openshift-ai)
+- [Fix kubeadmin as an administrator](#1-fix-kubeadmin-as-an-administrator-for-openshift-ai)
 - [Adding adminstrative user](#2-adding-administrative-user)
-- [Installing Web Terminal Operator](#3-installing-web-terminal-operator)
-- [Installing the Red Hat OpenShift AI Operator using the CLI](#4-installing-the-red-hat-openshift-ai-operator-using-the-cli)
+- [Installing Web Terminal operator](#3-installing-web-terminal-operator)
+- [Installing the Red Hat OpenShift AI operator using the CLI](#4-installing-the-red-hat-openshift-ai-operator-using-the-cli)
 - [Installing and managing Red Hat OpenShift AI components](#5-installing-and-managing-red-hat-openshift-ai-components)
 - [Adding a CA bundle](#6-adding-a-ca-bundle)
-- [(Optional) Configuring the OpenShift AI Operator logger](#7-optional-configuring-the-openshift-ai-operator-logger)
+- [(Optional) Configuring the OpenShift AI operator logger](#7-optional-configuring-the-openshift-ai-operator-logger)
 - Installing KServe dependencies
   - [Installing RHOS ServiceMesh](#81-installing-rhos-servicemesh)
   - [Installing RHOS Serverless](#82-installing-rhos-serverless)
+- [Feature Tracker error fix](#9-feature-tracker-error-fix)
+- [Creating KNative serving instance](#10-creating-a-knative-serving-instance)
+- [Creating secure gateways for KNative serving](#11-creating-secure-gateways-for-knative-serving)
 
 ## Step Details
 
 ### 1. Fix kubeadmin as an Administrator for Openshift AI
+
+> `kubeadmin` user is an automatically generated temporary user.  
+> Best practice is to create a new user using an identity provider and elevate the privileges of that user to cluster-admin.  
+> Once such user is created, the default kubeadmin user should be removed [More Info](https://access.redhat.com/solutions/5309141)
 
 - Create a cluster role binding so that OpenShift AI will recognize `kubeadmin` as a `cluster-admin`
 
@@ -28,6 +35,9 @@
     ```
 
 ### 2. Adding administrative user
+
+> For this process we are using HTpasswd typical for PoC.  
+>  You can configure the following types of identity providers htpasswd, keystone, LDAP, basic-authentication, request-header, GitHub, GitLab, Google, OpenID Connect.
 
 - Create an htpasswd file to store the user and password information
 - Create a secret to represent the htpasswd file
@@ -59,7 +69,9 @@
 
 ### 3. Installing Web Terminal Operator
 
-![NOTE] kubeadmin is unable to create web terminals
+> This provides a Web Terminal in the same browser as the OCP Web Console to minimize context switching between the browser and local client. [More Info](https://docs.redhat.com/en/documentation/openshift_container_platform/4.15/html/web_console/web-terminal)
+
+> ![NOTE] kubeadmin is unable to create web terminals [More Info](https://github.com/redhat-developer/web-terminal-operator/issues/162)
 
 - Create a subscription object for Web Terminal
 - Apply the subscription object
@@ -73,6 +85,10 @@
     ```
 
 ### 4. Installing the Red Hat OpenShift AI Operator using the CLI
+
+> [More Info](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/2.10/html/installing_and_uninstalling_openshift_ai_self-managed/installing-and-deploying-openshift-ai_install#installing-the-openshift-data-science-operator_operator-install)
+
+> Understanding update channels. We are using fast channel as this gives customers access to the latest product features [More Info](https://access.redhat.com/support/policy/updates/rhoai-sm/lifecycle)
 
 - Create a namespace YAML file
 - Apply the namespace object
@@ -366,7 +382,7 @@
   servicemeshmember.maistra.io/default created
   ```
 
-#### 9. Feature Tracker Error Fix
+### 9. Feature Tracker Error Fix
 
 There are two objects that are in an error state after installation at this point.
 
@@ -395,7 +411,9 @@ There are two objects that are in an error state after installation at this poin
     oc delete FeatureTracker/redhat-ods-applications-mesh-metrics-collection -A
     ```
 
-#### 10. Creating a KNative Serving Instance
+### 10. Creating a KNative Serving Instance
+
+[Section 3.3.1.2 source](https://access.redhat.com/documentation/en-us/red_hat_openshift_ai_self-managed/2.10/html/serving_models/serving-large-models_serving-large-models#creating-a-knative-serving-instance_serving-large-models)
 
 - Define a KnativeServing object in a YAML file
 - Apply the KnativeServing object in the specified knative-serving namespace
@@ -457,20 +475,58 @@ There are two objects that are in an error state after installation at this poin
     webhook-6bb9cd8c97-cxm2n                                      1/1     Running     0             75s
     ```
 
-#### 3.4 Creating secure gateways for Knative Serving
+### 11. Creating secure gateways for Knative Serving
 
-- [ ] Set environment variables to define base directories for generation of a wildcard certificate and key for the gateways.
-- [ ] Set an environment variable to define the common name used by the ingress controller of your OpenShift cluster
-- [ ] Create the required base directories for the certificate generation, based on the environment variables that you previously set
-- [ ] Create the OpenSSL configuration for generation of a wildcard certificate
-- [ ] Generate a root certificate
-- [ ] Generate a wildcard certificate signed by the root certificate
-- [ ] Verify the wildcard certificate
-- [ ] Export the wildcard key and certificate that were created by the script to new environment variables
-- [ ] Create a TLS secret in the istio-system namespace using the environment variables that you set for the wildcard certificate and key
-- [ ] Create a serverless-gateways.yaml YAML file
-- [ ] Apply the serverless-gateways.yaml file to create the defined resources
-- [ ] Review the gateways that you created
+> [More Info](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/2.10/html/serving_models/serving-large-models_serving-large-models#creating-secure-gateways-for-knative-serving_serving-large-models)
+
+> Why? To secure traffic between your Knative Serving instance and the service mesh, you must create secure gateways for your Knative Serving instance.  
+> The initial steps to generate a root signed certificate were completed previous
+
+- Verify the wildcard certificate
+  - ```sh
+    openssl verify -CAfile ${BASE_DIR}/root.crt ${BASE_DIR}/wildcard.crt
+    ```
+    ```
+    # expected output
+    /tmp/kserve/wildcard.crt: OK
+    ```
+- Export the wildcard key and certificate that were created by the script to new environment variables
+  - ```sh
+    export TARGET_CUSTOM_CERT=${BASE_DIR}/wildcard.crt
+    export TARGET_CUSTOM_KEY=${BASE_DIR}/wildcard.key
+    ```
+- Create a TLS secret in the istio-system namespace using the environment variables that you set for the wildcard certificate and key
+  - ```sh
+    oc create secret tls wildcard-certs --cert=${TARGET_CUSTOM_CERT} --key=${TARGET_CUSTOM_KEY} -n istio-system
+    ```
+    ```
+    # expected output
+    secret/wildcard-certs created
+    ```
+
+> Define a service in the istio-system namespace for the Knative local gateway. Defines an ingress gateway in the knative-serving namespace. The gateway uses the TLS secret you created earlier in this procedure. The ingress gateway handles external traffic to Knative. Defines a local gateway for Knative in the knative-serving namespace.
+
+- Create a serverless-gateway.yaml YAML file
+- Apply the serverless-gateways.yaml file to create the defined resources
+  - ```sh
+    oc apply -f configs/serverless-gateway.yaml
+    ```
+    ```
+    # expected output
+    service/knative-local-gateway unchanged
+    gateway.networking.istio.io/knative-ingress-gateway created
+    gateway.networking.istio.io/knative-local-gateway created
+    ```
+- Review the gateways that you created
+  - ```sh
+    oc get gateway --all-namespaces
+    ```
+    ```
+    # expected output
+    NAMESPACE         NAME                      AGE
+    knative-serving   knative-ingress-gateway   2m
+    knative-serving   knative-local-gateway     2m
+    ```
 
 #### 3.5 Installing Kserve
 
