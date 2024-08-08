@@ -13,12 +13,12 @@
 - [Installing and managing Red Hat OpenShift AI components](#5-installing-and-managing-red-hat-openshift-ai-components)
 - [Adding a CA bundle](#6-adding-a-ca-bundle)
 - [(Optional) Configuring the OpenShift AI operator logger](#7-optional-configuring-the-openshift-ai-operator-logger)
-- Installing KServe dependencies
-  - [Installing RHOS ServiceMesh](#81-installing-rhos-servicemesh)
-  - [Installing RHOS Serverless](#82-installing-rhos-serverless)
-- [Feature Tracker error fix](#9-feature-tracker-error-fix)
-- [Creating KNative serving instance](#10-creating-a-knative-serving-instance)
-- [Creating secure gateways for KNative serving](#11-creating-secure-gateways-for-knative-serving)
+- [Installing RHOS ServiceMesh](#8-installing-rhos-servicemesh)
+- [Installing RHOS Serverless](#9-installing-rhos-serverless)
+- [Feature Tracker error fix](#10-feature-tracker-error-fix)
+- [Creating KNative serving instance](#11-creating-a-knative-serving-instance)
+- [Creating secure gateways for KNative serving](#12-creating-secure-gateways-for-knative-serving)
+- [Manually adding Authorization provider](#13-manually-adding-authorizaiton-provider)
 
 ## Step Details
 
@@ -294,9 +294,7 @@
     oc get pods -l name=rhods-operator -o name -n redhat-ods-operator |  xargs -I {} oc logs -f {} -n redhat-ods-operator
     ```
 
-### 8. Installing KServe dependencies
-
-#### 8.1 Installing RHOS ServiceMesh
+### 8. Installing RHOS ServiceMesh
 
     (Optional operators - Kiali, Tempo)
     (Deprecated operators - Jaeger, Elastricsearch)
@@ -354,7 +352,7 @@
     istiod-minimal-5c68bf675d-whrns        1/1     Running   0          68s
     ```
 
-#### 8.2 Installing RHOS Serverless
+### 9. Installing RHOS Serverless
 
 - Define the Serverless operator namespace, operatorgroup, and subscription
 - Define a ServiceMeshMember object in a YAML file called serverless-smm.yaml
@@ -382,7 +380,7 @@
   servicemeshmember.maistra.io/default created
   ```
 
-### 9. Feature Tracker Error Fix
+### 10. Feature Tracker Error Fix
 
 There are two objects that are in an error state after installation at this point.
 
@@ -411,7 +409,7 @@ There are two objects that are in an error state after installation at this poin
     oc delete FeatureTracker/redhat-ods-applications-mesh-metrics-collection -A
     ```
 
-### 10. Creating a KNative Serving Instance
+### 11. Creating a KNative Serving Instance
 
 [Section 3.3.1.2 source](https://access.redhat.com/documentation/en-us/red_hat_openshift_ai_self-managed/2.10/html/serving_models/serving-large-models_serving-large-models#creating-a-knative-serving-instance_serving-large-models)
 
@@ -475,7 +473,7 @@ There are two objects that are in an error state after installation at this poin
     webhook-6bb9cd8c97-cxm2n                                      1/1     Running     0             75s
     ```
 
-### 11. Creating secure gateways for Knative Serving
+### 12. Creating secure gateways for Knative Serving
 
 > [More Info](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/2.10/html/serving_models/serving-large-models_serving-large-models#creating-secure-gateways-for-knative-serving_serving-large-models)
 
@@ -528,7 +526,7 @@ There are two objects that are in an error state after installation at this poin
     knative-serving   knative-local-gateway     2m
     ```
 
-### 12. Manually adding Authorizaiton provider
+### 13. Manually adding Authorizaiton provider
 
 > Why? Adding an authorization provider allows you to enable token authorization for models that you deploy on the platform, which ensures that only authorized parties can make inference requests to the models. [More Info](https://access.redhat.com/documentation/en-us/red_hat_openshift_ai_self-managed/2.10/html/serving_models/serving-large-models_serving-large-models#manually-adding-an-authorization-provider_serving-large-models)
 
