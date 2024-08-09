@@ -780,3 +780,102 @@ There are two objects that are in an error state after installation at this poin
     ```
 
 ### 17. Deploying the Node Feature Discovery operator
+
+> [More Info](https://docs.redhat.com/en/documentation/openshift_container_platform/4.15/html/machine_management/managing-compute-machines-with-the-machine-api#nvidia-gpu-aws-deploying-the-node-feature-discovery-operator_creating-machineset-aws)
+
+- List the available operators for installation searching for Node Feature Discovery (NFD)
+
+  - ```sh
+    oc get packagemanifests -n openshift-marketplace | grep nfd
+    ```
+    ```
+    # expected output
+    openshift-nfd-operator                             Community Operators   8h
+    nfd                                                Red Hat Operators     8h
+    ```
+
+- Create and apply the Namespace object
+
+  - ```sh
+    oc apply -f configs/nfd-operator-ns.yaml
+    ```
+    ```
+    # expected output
+    # expected output
+    namespace/openshift-nfd created
+    ```
+
+- Create and apply the OperatorGroup object
+
+  - ```sh
+    oc apply -f configs/nfd-operator-group.yaml
+    ```
+    ```
+    # expected output
+    operatorgroup.operators.coreos.com/nfd created
+    ```
+
+- Create a Subscription object YAML file to subscribe a namespace to an Operator
+- Apply the Subscription object
+
+  - ```sh
+    oc apply -f configs/nfd-operator-sub.yaml
+    ```
+    ```
+    # expected output
+    subscription.operators.coreos.com/nfd created
+    ```
+
+- Verify the operator is installed and running
+
+  - ```sh
+    oc get pods -n openshift-nfd
+    ```
+    ```
+    # expected output
+    NAME                                      READY   STATUS    RESTARTS   AGE
+    nfd-controller-manager-78758c57f7-7xfh4   2/2     Running   0          48s
+    ```
+
+- Create an NodeFeatureDiscovery instance via the CLI or UI (recommended)
+- Create the nfd instance object
+  - ```sh
+    oc apply -f configs/nfd-instance.yaml
+    ```
+    ```
+    # expected output
+    nodefeaturediscovery.nfd.openshift.io/nfd-instance created
+    ```
+
+> ![IMPORTANT] The NFD Operator uses vendor PCI IDs to identify hardware in a node. NVIDIA uses the PCI ID 10de.
+
+- Verify the NFD pods are Running on the cluster nodes polling for devices
+
+  - ```sh
+    oc get pods -n openshift-nfd
+    ```
+    ```
+    # expected output
+    NAME                                      READY   STATUS    RESTARTS   AGE
+    nfd-controller-manager-78758c57f7-7xfh4   2/2     Running   0          99s
+    nfd-master-74db665cb6-vht4l               1/1     Running   0          25s
+    nfd-worker-8zkpz                          1/1     Running   0          25s
+    nfd-worker-d7wgh                          1/1     Running   0          25s
+    nfd-worker-l6sqx                          1/1     Running   0          25s
+    ```
+
+- Verify the NVIDIA GPU is discovered
+  - ```sh
+    oc get nodes
+    ```
+  - ```sh
+    oc describe node <NODE_NAME> | egrep 'Roles|pci'
+    ```
+    ```
+    # expected output
+    Roles:              worker
+                        feature.node.kubernetes.io/pci-10de.present=true
+                        feature.node.kubernetes.io/pci-1d0f.present=true
+    ```
+
+> Verify the NVIDIA GPU is discovered 10de appears in the node feature list for the GPU-enabled node. This mean the NFD Operator correctly identified the node from the GPU-enabled MachineSet.
