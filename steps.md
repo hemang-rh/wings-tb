@@ -7,7 +7,7 @@
 ## High Level Steps
 
 - [Fix kubeadmin as an administrator](#1-fix-kubeadmin-as-an-administrator-for-openshift-ai)
-- [Adding adminstrative user](#2-adding-administrative-user)
+- [Adding administrative user](#2-adding-administrative-user)
 - [(Optional) Installing Web Terminal operator](#3-installing-web-terminal-operator)
 - [Installing the Red Hat OpenShift AI operator using the CLI](#4-installing-the-red-hat-openshift-ai-operator-using-the-cli)
 - [Installing and managing Red Hat OpenShift AI components](#5-installing-and-managing-red-hat-openshift-ai-components)
@@ -737,7 +737,7 @@ There are two objects that are in an error state after installation at this poin
     oc get machineset -n openshift-machine-api
     ```
   - ```sh
-    oc get machineset hs-wings-mset -n openshift-machine-api -o yaml > scratch/machineset.yaml
+    oc get machineset <machineset-name> -n openshift-machine-api -o yaml > scratch/machineset.yaml
     ```
 
 > Update the following fields:
