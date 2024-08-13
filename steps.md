@@ -8,7 +8,7 @@
 
 - [Fix kubeadmin as an administrator](#1-fix-kubeadmin-as-an-administrator-for-openshift-ai)
 - [Adding adminstrative user](#2-adding-administrative-user)
-- [Installing Web Terminal operator](#3-installing-web-terminal-operator)
+- [(Optional) Installing Web Terminal operator](#3-installing-web-terminal-operator)
 - [Installing the Red Hat OpenShift AI operator using the CLI](#4-installing-the-red-hat-openshift-ai-operator-using-the-cli)
 - [Installing and managing Red Hat OpenShift AI components](#5-installing-and-managing-red-hat-openshift-ai-components)
 - [Adding a CA bundle](#6-adding-a-ca-bundle)
@@ -21,6 +21,8 @@
 - [Manually adding Authorization provider](#13-manually-adding-authorizaiton-provider)
 - [Configuring an OpenShift Service Mesh instance to use Authorino](#14-configuring-an-openshift-service-mesh-instance-to-use-authorino)
 - [Configuring authorization for KServe](#15-configuring-authorization-for-kserve)
+- [Adding GPU node to an existing OCP cluster](#16-adding-a-gpu-node-to-an-existing-openshift-container-platform-cluster)
+- [Deploying the Node Feature Discovery operator](#17-deploying-the-node-feature-discovery-operator)
 
 ## Step Details
 
@@ -69,7 +71,7 @@
     oc login --insecure-skip-tls-verify=true -u admin1 -p openshift1
     ```
 
-### 3. Installing Web Terminal Operator
+### 3. (Optional) Installing Web Terminal Operator
 
 > This provides a Web Terminal in the same browser as the OCP Web Console to minimize context switching between the browser and local client. [More Info](https://docs.redhat.com/en/documentation/openshift_container_platform/4.15/html/web_console/web-terminal)
 
@@ -879,3 +881,277 @@ There are two objects that are in an error state after installation at this poin
     ```
 
 > Verify the NVIDIA GPU is discovered 10de appears in the node feature list for the GPU-enabled node. This mean the NFD Operator correctly identified the node from the GPU-enabled MachineSet.
+
+### 18. Installing the NVIDIA GPU Operator
+
+> [More Info](https://docs.nvidia.com/datacenter/cloud-native/openshift/latest/install-gpu-ocp.html#installing-the-nvidia-gpu-operator-using-the-cli)
+
+- List the available operators for installation searching for Node Feature Discovery (NFD)
+
+  - ```sh
+    oc get packagemanifests -n openshift-marketplace | grep gpu
+    ```
+
+    ```sh
+    # expected output
+    amd-gpu-operator                                   Community Operators   8h
+    gpu-operator-certified                             Certified Operators   8h
+    ```
+
+- Create a Namespace custom resource (CR) that defines the nvidia-gpu-operator namespace
+- Apply the Namespace object YAML file
+
+  - ```sh
+    oc apply -f configs/nvidia-gpu-operator-ns.yaml
+    ```
+
+    ```sh
+    # expected output
+    namespace/nvidia-gpu-operator created
+    ```
+
+- Create an OperatorGroup CR
+- Apply the OperatorGroup YAML file
+
+  - ```sh
+    oc apply -f configs/nvidia-gpu-operator-group.yaml
+    ```
+
+    ```sh
+    # expected output
+    operatorgroup.operators.coreos.com/nvidia-gpu-operator-group created
+    ```
+
+- Run the following command to get the channel value
+
+  - ```sh
+    oc get packagemanifest gpu-operator-certified -n openshift-marketplace -o jsonpath='{.status.defaultChannel}'
+    ```
+
+    ```sh
+    # expected output
+    v24.3
+    ```
+
+- Run the following commands to get the startingCSV
+
+  - ```sh
+    CHANNEL=v24.3
+
+    oc get packagemanifests/gpu-operator-certified -n openshift-marketplace -ojson | jq -r '.status.channels[] | select(.name == "'$CHANNEL'") | .currentCSV'
+    ```
+
+    ```sh
+    # expected output
+    gpu-operator-certified.v24.3.0
+    ```
+
+- Create the following Subscription CR and save the YAML
+- Update the `channel` and `startingCSV` fields with the information returned
+- Apply the Subscription CR
+
+  - ```sh
+    oc apply -f configs/nvidia-gpu-operator-subscription.yaml
+    ```
+
+    ```sh
+    # expected output
+    subscription.operators.coreos.com/gpu-operator-certified created
+    ```
+
+- Verify an install plan has been created
+
+  - ```sh
+    oc get installplan -n nvidia-gpu-operator
+    ```
+
+    ```sh
+    # expected output
+    NAME            CSV                              APPROVAL    APPROVED
+    install-q9rnm   gpu-operator-certified.v24.3.0   Automatic   true
+    ```
+
+**(Optional) Approve the install plan if not `Automatic`**
+
+- ```sh
+  INSTALL_PLAN=$(oc get installplan -n nvidia-gpu-operator -oname)
+  ```
+
+- Create the cluster policy
+
+  - ```sh
+    oc get csv -n nvidia-gpu-operator gpu-operator-certified.v24.3.0 -o jsonpath='{.metadata.annotations.alm-examples}' | jq '.[0]' > scratch/nvidia-gpu-clusterpolicy.json
+    ```
+
+- Apply the clusterpolicy
+
+  - ```sh
+    oc apply -f scratch/nvidia-gpu-clusterpolicy.json
+    ```
+
+    ```sh
+    # expected output
+    clusterpolicy.nvidia.com/gpu-cluster-policy created
+    ```
+
+> At this point, the GPU Operator proceeds and installs all the required components to set up the NVIDIA GPUs in the OpenShift 4 cluster. Wait at least 10-20 minutes before digging deeper into any form of troubleshooting because this may take a period of time to finish.
+
+- Verify the successful installation of the NVIDIA GPU Operator
+
+  - ```sh
+    oc get pods,daemonset -n nvidia-gpu-operator
+    ```
+
+    ```sh
+    # expected output
+    NAME                                                           DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR                                                                                                         AGE
+    daemonset.apps/gpu-feature-discovery                           0         0         0       0            0           nvidia.com/gpu.deploy.gpu-feature-discovery=true                                                                      22s
+    daemonset.apps/nvidia-container-toolkit-daemonset              0         0         0       0            0           nvidia.com/gpu.deploy.container-toolkit=true                                                                          22s
+    daemonset.apps/nvidia-dcgm                                     0         0         0       0            0           nvidia.com/gpu.deploy.dcgm=true                                                                                       22s
+    daemonset.apps/nvidia-dcgm-exporter                            0         0         0       0            0           nvidia.com/gpu.deploy.dcgm-exporter=true                                                                              22s
+    daemonset.apps/nvidia-device-plugin-daemonset                  0         0         0       0            0           nvidia.com/gpu.deploy.device-plugin=true                                                                              22s
+    daemonset.apps/nvidia-device-plugin-mps-control-daemon         0         0         0       0            0           nvidia.com/gpu.deploy.device-plugin=true,nvidia.com/mps.capable=true                                                  22s
+    daemonset.apps/nvidia-driver-daemonset-415.92.202406251950-0   2         2         0       2            0           feature.node.kubernetes.io/system-os_release.OSTREE_VERSION=415.92.202406251950-0,nvidia.com/gpu.deploy.driver=true   22s
+    daemonset.apps/nvidia-mig-manager                              0         0         0       0            0           nvidia.com/gpu.deploy.mig-manager=true                                                                                22s
+    daemonset.apps/nvidia-node-status-exporter                     2         2         2       2            2           nvidia.com/gpu.deploy.node-status-exporter=true                                                                       22s
+    daemonset.apps/nvidia-operator-validator                       0         0         0       0            0           nvidia.com/gpu.deploy.operator-validator=true                                                                         22s
+    ```
+
+**(Optional) When the NVIDIA operator completes labeling the nodes, you can add a label to the GPU node Role as `gpu, worker` for readability (cosmetic)**
+
+- ```sh
+  oc label node -l nvidia.com/gpu.machine node-role.kubernetes.io/gpu=''
+  ```
+
+- ```sh
+  oc get nodes
+  ```
+
+  ```
+  # expected output
+  NAME                                        STATUS   ROLES                         AGE   VERSION
+  ip-10-0-xx-xxx.us-east-2.compute.internal   Ready    gpu,worker                    19h   v1.28.10+a2c84a5
+  ip-10-0-xx-xxx.us-east-2.compute.internal   Ready    gpu,worker                    19h   v1.28.10+a2c84a5
+  ...
+  ```
+
+- In order to apply this label to new machines/nodes:
+
+  - ```sh
+    MACHINE_SET_TYPE=$(oc -n openshift-machine-api get machinesets.machine.openshift.io -o name | grep gpu | head -n1)
+
+    oc -n openshift-machine-api \
+      patch "${MACHINE_SET_TYPE}" \
+      --type=merge --patch '{"spec":{"template":{"spec":{"metadata":{"labels":{"node-role.kubernetes.io/gpu":""}}}}}}'
+    ```
+
+    ```sh
+    # expected output
+    machineset.machine.openshift.io/cluster-xxxxx-xxxxx-worker-us-east-xc-gpu patched
+    ```
+
+### 19. (Optional) Running a sample GPU application
+
+> [More Info](https://docs.nvidia.com/datacenter/cloud-native/openshift/latest/install-gpu-ocp.html#running-a-sample-gpu-application)
+
+- Run a simple CUDA VectorAdd sample, which adds two vectors together to ensure the GPUs have bootstrapped correctly
+- Create a test project
+
+  - ```sh
+    oc new-project sandbox
+    ```
+
+    ```sh
+    # expected output
+    Now using project "sandbox" on server "https://api.cluster-582gr.582gr.sandbox2642.opentlc.com:6443".
+    ```
+
+- Create the sample app
+
+  - ```sh
+    oc create -f configs/nvidia-gpu-sample-app.yaml
+    ```
+
+    ```sh
+    # expected output
+    pod/cuda-vectoradd created
+    ```
+
+- Check the logs of the container
+
+  - ```sh
+    oc logs cuda-vectoradd
+    ```
+
+    ```sh
+    # expected output
+    [Vector addition of 50000 elements]
+    Copy input data from the host memory to the CUDA device
+    CUDA kernel launch with 196 blocks of 256 threads
+    Copy output data from the CUDA device to the host memory
+    Test PASSED
+    Done
+    ```
+
+  - ```sh
+    oc get pods
+    ```
+
+    ```sh
+    # expected output
+    oc get pods
+    NAME             READY   STATUS      RESTARTS   AGE
+    cuda-vectoradd   0/1     Completed   0          54s
+    ```
+
+- Get information about the GPU
+
+  - ```sh
+    oc project nvidia-gpu-operator
+    ```
+
+- View the new pods
+
+  - ```sh
+    oc get pod -o wide -l openshift.driver-toolkit=true
+    ```
+
+    ```sh
+    # expected output
+    NAME                                                  READY   STATUS    RESTARTS   AGE   IP            NODE                                       NOMINATED NODE   READINESS GATES
+    nvidia-driver-daemonset-415.92.202407091355-0-64sml   2/2     Running   2          21h   10.130.0.8    ip-10-0-22-25.us-east-2.compute.internal   <none>           <none>
+    nvidia-driver-daemonset-415.92.202407091355-0-clp7f   2/2     Running   2          21h   10.129.0.10   ip-10-0-22-15.us-east-2.compute.internal   <none>           <none>
+    ```
+
+- With the Pod and node name, run the nvidia-smi on the correct node.
+
+  - ```sh
+    oc exec -it nvidia-driver-daemonset-410.84.202203290245-0-xxgdv -- nvidia-smi
+    ```
+
+    ```sh
+    # expected output
+    Fri Jul 26 20:06:33 2024
+    +-----------------------------------------------------------------------------------------+
+    | NVIDIA-SMI 550.54.15              Driver Version: 550.54.15      CUDA Version: 12.4     |
+    |-----------------------------------------+------------------------+----------------------+
+    | GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+    | Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+    |                                         |                        |               MIG M. |
+    |=========================================+========================+======================|
+    |   0  Tesla T4                       On  |   00000000:00:1E.0 Off |                    0 |
+    | N/A   34C    P8             14W /   70W |       0MiB /  15360MiB |      0%      Default |
+    |                                         |                        |                  N/A |
+    +-----------------------------------------+------------------------+----------------------+
+
+    +-----------------------------------------------------------------------------------------+
+    | Processes:                                                                              |
+    |  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+    |        ID   ID                                                               Usage      |
+    |=========================================================================================|
+    |  No running processes found                                                             |
+    +-----------------------------------------------------------------------------------------+
+    ```
+
+> - The first table reflects the information about all available GPUs (the example shows one GPU).
+> - The second table provides details on the processes using the GPUs.
