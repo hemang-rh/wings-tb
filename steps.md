@@ -52,11 +52,11 @@
 - As kubeadmin, assign the cluster-admin role to perform administrator level tasks
 
   - ```sh
-    htpasswd -c -B -b users.htpasswd admin1 openshift1
+    htpasswd -c -B -b scratch/users.htpasswd admin1 openshift1
     ```
 
   - ```sh
-    oc create secret generic htpasswd-secret --from-file=htpasswd=users.htpasswd -n openshift-config
+    oc create secret generic htpasswd-secret --from-file=htpasswd=scratch/users.htpasswd -n openshift-config
     ```
 
   - ```sh
