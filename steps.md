@@ -23,6 +23,8 @@
 - [Configuring authorization for KServe](#15-configuring-authorization-for-kserve)
 - [Adding GPU node to an existing OCP cluster](#16-adding-a-gpu-node-to-an-existing-openshift-container-platform-cluster)
 - [Deploying the Node Feature Discovery operator](#17-deploying-the-node-feature-discovery-operator)
+- [Installing the NVidia GPU operator](#18-installing-the-nvidia-gpu-operator)
+- [(Optional) Running a sample GPU application](#19-optional-running-a-sample-gpu-application)
 
 ## Step Details
 
