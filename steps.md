@@ -25,6 +25,7 @@
 - [Deploying the Node Feature Discovery operator](#17-deploying-the-node-feature-discovery-operator)
 - [Installing the NVidia GPU operator](#18-installing-the-nvidia-gpu-operator)
 - [(Optional) Running a sample GPU application](#19-optional-running-a-sample-gpu-application)
+- [Enable GPU monitoring dashboard](#20-enable-gpu-monitoring-dashboard)
 
 ## Step Details
 
