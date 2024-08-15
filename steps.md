@@ -1373,3 +1373,140 @@ You should receive a message on the console "Web console update is available" > 
   - ```sh
     oc -n nvidia-gpu-operator get all -l app.kubernetes.io/name=console-plugin-nvidia-gpu
     ```
+
+### GPU sharing methods
+
+> Why? By default, you get one workload per GPU. This is inefficient for certain use cases. [How can you share a GPU to 1:N workloads](https://docs.openshift.com/container-platform/4.15/architecture/nvidia-gpu-architecture-overview.html#nvidia-gpu-prerequisites_nvidia-gpu-architecture-overview):
+
+> For NVIDIA:
+
+> - [Time-slicing NVIDIA GPUs](https://docs.nvidia.com/datacenter/cloud-native/openshift/latest/time-slicing-gpus-in-openshift.html#)
+> - [Multi-Instance GPU (MIG)](https://docs.nvidia.com/datacenter/cloud-native/openshift/latest/mig-ocp.html)
+> - [NVIDIA vGPUs](https://docs.nvidia.com/datacenter/cloud-native/openshift/23.9.2/nvaie-with-ocp.html?highlight=passthrough#openshift-container-platform-on-vmware-vsphere-with-nvidia-vgpus)
+
+### 22. Configuring GPUs with time slicing
+
+> [More Info](https://docs.nvidia.com/datacenter/cloud-native/openshift/latest/time-slicing-gpus-in-openshift.html#configuring-gpus-with-time-slicing)
+
+> The following sections show you how to configure NVIDIA Tesla T4 GPUs, as they do not support MIG, but can easily accept multiple small jobs.
+
+> The NVIDIA GPU Operator enables oversubscription of GPUs through a set of extended options for the NVIDIA Kubernetes Device Plugin. GPU time-slicing enables workloads that are scheduled on oversubscribed GPUs to interleave with one another.
+
+> You configure GPU time-slicing by performing the following high-level steps:
+
+> 1. Add a config map to the namespace that is used by the GPU operator (i.e. `device-plugin-config`).
+> 2. Configure the cluster policy so that the device plugin uses the config map. (i.e. `gpu-cluster-policy`)
+> 3. Apply a label to the nodes that you want to configure for GPU time-slicing. (i.e. `Tesla-T4-SHARED`)
+
+> Important: The ConfigMap name is `device-plugin-config` and the profile name is `time-sliced-8`. These names are important as you can change them for your purposes. You can list multiple GPU profiles like in the [ai-gitops-catalog](https://github.com/redhat-na-ssa/demo-ai-gitops-catalog/blob/main/components/operators/gpu-operator-certified/instance/components/time-sliced-4/patch-device-plugin-config.yaml). Also, [see Applying multi-node configuration](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/gpu-sharing.html#applying-multiple-node-specific-configurations)
+
+> On a machine with one GPU, the following config map configures Kubernetes so that the node advertises 8 GPU resources. A machine with two GPUs advertises 16 GPUs, and so on. [More Info](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/gpu-sharing.html#about-configuring-gpu-time-slicing)
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: device-plugin-config
+  namespace: nvidia-gpu-operator
+data:
+  time-sliced-8: |-
+    version: v1
+    sharing:
+      timeSlicing:
+        resources:
+          - name: nvidia.com/gpu
+            replicas: 8
+```
+
+- Apply the device plugin configuration
+
+  - ```sh
+    oc apply -f configs/nvidia-gpu-deviceplugin-cm.yaml
+    ```
+
+    ```sh
+    # expected output
+    configmap/device-plugin-config created
+    ```
+
+- Tell the GPU Operator which ConfigMap, in this case `device-plugin-config` to use for the device plugin configuration.
+
+  - ```sh
+    oc patch clusterpolicy gpu-cluster-policy \
+        -n nvidia-gpu-operator --type merge \
+        -p '{"spec": {"devicePlugin": {"config": {"name": "device-plugin-config"}}}}'
+    ```
+
+    ```sh
+    # expected output
+    clusterpolicy.nvidia.com/gpu-cluster-policy patched
+    ```
+
+- Apply the configuration to all the nodes you have with Tesla T GPUs. GFD, labels the nodes with the GPU product, in this example Tesla-T4, so you can use a node selector to label all of the nodes at once.
+
+  - ```sh
+    oc label --overwrite node \
+        --selector=nvidia.com/gpu.product=Tesla-T4 \
+        nvidia.com/device-plugin.config=time-sliced-8
+    ```
+
+    ```sh
+    # expected output
+    node/ip-10-0-29-207.us-east-2.compute.internal labeled
+    node/ip-10-0-36-189.us-east-2.compute.internal labeled
+    ```
+
+- Patch the NVIDIA GPU Operator ClusterPolicy to use the timeslicing configuration by default.
+
+  - ```sh
+    oc patch clusterpolicy gpu-cluster-policy \
+        -n nvidia-gpu-operator --type merge \
+        -p '{"spec": {"devicePlugin": {"config": {"default": "time-sliced-8"}}}}'
+    ```
+
+    ```sh
+    # expected output
+    clusterpolicy.nvidia.com/gpu-cluster-policy patched
+    ```
+
+- The applied configuration creates eight replicas for Tesla T4 GPUs, so the nvidia.com/gpu external resource is set to 8. You can apply a cluster-wide default time-slicing configuration. You can also apply node-specific configurations. For example, you can apply a time-slicing configuration to nodes with Tesla-T4 GPUs only and not modify nodes with other GPU models.
+
+  - ```sh
+    oc get node --selector=nvidia.com/gpu.product=Tesla-T4-SHARED -o json | jq '.items[0].status.capacity'
+    ```
+
+    The `-SHARED` product name suffix ensures that you can specify a node selector to assign pods to nodes with time-sliced GPUs.
+
+    ```sh
+    # expected output
+    {
+      "cpu": "16",
+      "ephemeral-storage": "104266732Ki",
+      "hugepages-1Gi": "0",
+      "hugepages-2Mi": "0",
+      "memory": "65029276Ki",
+      "nvidia.com/gpu": "8",
+      "pods": "250"
+    }
+    ```
+
+- Verify that GFD labels have been added to indicate time-sharing.
+
+  1. The `nvidia.com/gpu.count` label reports the number of physical GPUs in the machine.
+  2. The `nvidia.com/gpu.product` label includes a `-SHARED` suffix to the product name.
+  3. The `nvidia.com/gpu.replicas` label matches the reported capacity.
+
+  - ```sh
+    oc get node --selector=nvidia.com/gpu.product=Tesla-T4-SHARED -o json \
+    | jq '.items[0].metadata.labels' | grep nvidia
+    ```
+
+    ```sh
+    # expected output
+      ...
+      "nvidia.com/gpu.count": "1",
+      ...
+      "nvidia.com/gpu.product": "Tesla-T4-SHARED",
+      "nvidia.com/gpu.replicas": "8",
+      ...
+    ```
