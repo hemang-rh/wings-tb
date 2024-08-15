@@ -896,7 +896,7 @@ There are two objects that are in an error state after installation at this poin
     oc get packagemanifests -n openshift-marketplace | grep gpu
     ```
 
-    ```sh
+    ```
     # expected output
     amd-gpu-operator                                   Community Operators   8h
     gpu-operator-certified                             Certified Operators   8h
