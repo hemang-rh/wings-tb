@@ -27,6 +27,8 @@
 - [(Optional) Running a sample GPU application](#19-optional-running-a-sample-gpu-application)
 - [Enable GPU monitoring dashboard](#20-enable-gpu-monitoring-dashboard)
 - [Installing the NVIDIA GPU administration dashboard](#21-installing-the-nvidia-gpu-administration-dashboard)
+- [Configuring GPUs with time slicing](#22-configuring-gpus-with-time-slicing)
+- [Configure taints and tolerations](#23-configure-taints-and-tolerations)
 
 ## Step Details
 
@@ -1510,3 +1512,137 @@ data:
       "nvidia.com/gpu.replicas": "8",
       ...
     ```
+
+### 23. Configure Taints and Tolerations
+
+> Why? Prevent non-GPU workloads from being scheduled on the GPU nodes.
+
+- Taint the GPU nodes with `nvidia.com/gpu`. This MUST match the Accelerator profile taint key you use (this could be different, i.e. `nvidia-gpu-only`).
+
+  - ```sh
+    oc adm taint node -l nvidia.com/gpu.machine nvidia.com/gpu=:NoSchedule --overwrite
+    ```
+
+- Edit the `ClusterPolicy` in the NVIDIA GPU Operator under the `nvidia-gpu-operator` project. Add the below section to `.spec.daemonsets:`
+
+  - ```sh
+    oc edit ClusterPolicy
+    ```
+
+    ```sh
+      daemonsets:
+        tolerations:
+        - effect: NoSchedule
+          operator: Exists
+          key: nvidia.com/gpu
+    ```
+
+- Cordon the GPU node, drain the GPU tainted nodes and terminate workloads
+
+  - ```sh
+    oc adm drain -l nvidia.com/gpu.machine --ignore-daemonsets --delete-emptydir-data
+    ```
+
+- Allow the GPU node to be schedulable again per tolerations
+
+  - ```sh
+    oc adm uncordon -l nvidia.com/gpu.machine
+    ```
+
+- Get the name of the gpu node
+
+  - ```sh
+    MACHINE_SET_TYPE=$(oc get machineset -n openshift-machine-api -o name |  egrep gpu)
+    ```
+
+- Taint the machineset for any new nodes that get added to be tainted with `nvidia.com/gpu`
+
+  - ```sh
+    oc -n openshift-machine-api \
+      patch "${MACHINE_SET_TYPE}" \
+      --type=merge --patch '{"spec":{"template":{"spec":{"taints":[{"key":"nvidia.com/gpu","value":"","effect":"NoSchedule"}]}}}}'
+    ```
+
+> Tolerations will be set in the RHOAI accelerator profiles that match the Taint key.
+
+### 24. Configuring the cluster autoscaler
+
+> [More Info](https://docs.openshift.com/container-platform/4.15/machine_management/applying-autoscaling.html)
+
+### 25. Configuring distributed workloads
+
+> [More Info](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/2.10/html/working_with_distributed_workloads/configuring-distributed-workloads_distributed-workloads)
+
+> Components required for Distributed Workloads
+
+> 1. dashboard
+> 1. workbenches
+> 1. datasciencepipelines
+> 1. codeflare
+> 1. kueue
+> 1. ray
+
+- Verify the necessary pods are running - When the status of the codeflare-operator-manager-[pod-id], kuberay-operator-[pod-id], and kueue-controller-manager-[pod-id] pods is Running, the pods are ready to use.
+
+  - ```sh
+    oc get pods -n redhat-ods-applications | grep -E 'codeflare|kuberay|kueue'
+    ```
+
+    ```sh
+    # expected output
+    codeflare-operator-manager-6bbff698d-74fpz                        1/1     Running   7 (107m ago)   21h
+    kuberay-operator-bf97858f4-zg45s                                  1/1     Running   8 (10m ago)    21h
+    kueue-controller-manager-77c758b595-hgrz7                         1/1     Running   8 (10m ago)    21h
+    ```
+
+### 26. Configure taints and tolerations
+
+> Why? Prevent non-GPU workloads from being scheduled on the GPU nodes.
+
+- Taint the GPU nodes with `nvidia.com/gpu`. This MUST match the Accelerator profile taint key you use (this could be different, i.e. `nvidia-gpu-only`).
+
+  - ```sh
+    oc adm taint node -l nvidia.com/gpu.machine nvidia.com/gpu=:NoSchedule --overwrite
+    ```
+
+- Edit the `ClusterPolicy` in the NVIDIA GPU Operator under the `nvidia-gpu-operator` project. Add the below section to `.spec.daemonsets:`
+
+  - ```sh
+    oc edit ClusterPolicy
+    ```
+
+    ```sh
+      daemonsets:
+        tolerations:
+        - effect: NoSchedule
+          operator: Exists
+          key: nvidia.com/gpu
+    ```
+
+- Cordon the GPU node, drain the GPU tainted nodes and terminate workloads
+
+  - ```sh
+    oc adm drain -l nvidia.com/gpu.machine --ignore-daemonsets --delete-emptydir-data
+    ```
+
+- Allow the GPU node to be schedulable again per tolerations
+
+  - ```sh
+    oc adm uncordon -l nvidia.com/gpu.machine
+    ```
+
+- Get the name of the gpu node
+
+  - ```sh
+    MACHINE_SET_TYPE=$(oc get machineset -n openshift-machine-api -o name |  egrep gpu)
+    ```
+
+- Taint the machineset for any new nodes that get added to be tainted with `nvidia.com/gpu`
+
+  - ```sh
+    oc -n openshift-machine-api \
+      patch "${MACHINE_SET_TYPE}" \
+      --type=merge --patch '{"spec":{"template":{"spec":{"taints":[{"key":"nvidia.com/gpu","value":"","effect":"NoSchedule"}]}}}}'
+    ```
+
+> Tolerations will be set in the RHOAI accelerator profiles that match the Taint key.
