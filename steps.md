@@ -1595,54 +1595,106 @@ data:
     kueue-controller-manager-77c758b595-hgrz7                         1/1     Running   8 (10m ago)    21h
     ```
 
-### 26. Configure taints and tolerations
+### 26. (Optional) Configuring the cluster autoscaler
 
-> Why? Prevent non-GPU workloads from being scheduled on the GPU nodes.
+> [More Info](https://docs.openshift.com/container-platform/4.15/machine_management/applying-autoscaling.html)
 
-- Taint the GPU nodes with `nvidia.com/gpu`. This MUST match the Accelerator profile taint key you use (this could be different, i.e. `nvidia-gpu-only`).
+## Configuring distributed workloads
+
+> [source](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/2.10/html/working_with_distributed_workloads/configuring-distributed-workloads_distributed-workloads)
+
+> Components required for Distributed Workloads
+
+> 1.  dashboard
+> 1.  workbenches
+> 1.  datasciencepipelines
+> 1.  codeflare
+> 1.  kueue
+> 1.  ray
+
+- Verify the necessary pods are running - When the status of the codeflare-operator-manager-[pod-id], kuberay-operator-[pod-id], and kueue-controller-manager-[pod-id] pods is Running, the pods are ready to use.
 
   - ```sh
-    oc adm taint node -l nvidia.com/gpu.machine nvidia.com/gpu=:NoSchedule --overwrite
-    ```
-
-- Edit the `ClusterPolicy` in the NVIDIA GPU Operator under the `nvidia-gpu-operator` project. Add the below section to `.spec.daemonsets:`
-
-  - ```sh
-    oc edit ClusterPolicy
+    oc get pods -n redhat-ods-applications | grep -E 'codeflare|kuberay|kueue'
     ```
 
     ```sh
-      daemonsets:
-        tolerations:
-        - effect: NoSchedule
-          operator: Exists
-          key: nvidia.com/gpu
+    # expected output
+    codeflare-operator-manager-6bbff698d-74fpz                        1/1     Running   7 (107m ago)   21h
+    kuberay-operator-bf97858f4-zg45s                                  1/1     Running   8 (10m ago)    21h
+    kueue-controller-manager-77c758b595-hgrz7                         1/1     Running   8 (10m ago)    21h
     ```
 
-- Cordon the GPU node, drain the GPU tainted nodes and terminate workloads
+### 27. Configuring quota management for distributed workloads
+
+- Create an empty Kueue resource flavor
+
+  > Why? Resources in a cluster are typically not homogeneous. A ResourceFlavor is an object that represents these resource variations (i.e. Nvidia A100 versus T4 GPUs) and allows you to associate them with cluster nodes through labels, taints and tolerations.
+
+- Apply the rhoai kueue resource flavor configuration to create the `default-flavor`
 
   - ```sh
-    oc adm drain -l nvidia.com/gpu.machine --ignore-daemonsets --delete-emptydir-data
+    oc apply -f configs/rhoai-kueue-default-flavor.yaml
     ```
 
-- Allow the GPU node to be schedulable again per tolerations
+    ```sh
+    # expected output
+    resourceflavor.kueue.x-k8s.io/default-flavor created
+    ```
+
+- Create a cluster queue to manage the empty Kueue resource flavor
+
+  > Why? A ClusterQueue is a cluster-scoped object that governs a pool of resources such as pods, CPU, memory, and hardware accelerators. Only batch administrators should create ClusterQueue objects.
+
+  > What is this cluster-queue doing? This ClusterQueue admits Workloads if and only if:
+
+  > - The sum of the CPU requests is less than or equal to 9.
+  > - The sum of the memory requests is less than or equal to 36Gi.
+  > - The total number of pods is less than or equal to 5.
+
+  > ![IMPORTANT]
+  > Replace the example quota values (9 CPUs, 36 GiB memory, and 5 NVIDIA GPUs) with the appropriate values for your cluster queue. The cluster queue will start a distributed workload only if the total required resources are within these quota limits. Only homogenous NVIDIA GPUs are supported.
+
+- Apply the configuration to create the `cluster-queue`
 
   - ```sh
-    oc adm uncordon -l nvidia.com/gpu.machine
+    oc apply -f configs/rhoai-kueue-cluster-queue.yaml
     ```
 
-- Get the name of the gpu node
+    ```sh
+    # expected output
+    clusterqueue.kueue.x-k8s.io/cluster-queue created
+    ```
+
+- Create a local queue that points to your cluster queue
+
+  > Why? A LocalQueue is a namespaced object that groups closely related Workloads that belong to a single namespace. Users submit jobs to a LocalQueue, instead of to a ClusterQueue directly.
+
+  > ![NOTE]
+  > Update the `name` and `namespace` accordingly.
+
+- Apply the configuration to create the local-queue object
 
   - ```sh
-    MACHINE_SET_TYPE=$(oc get machineset -n openshift-machine-api -o name |  egrep gpu)
+    oc new-project sandbox
+    oc apply -f configs/rhoai-kueue-local-queue.yaml
     ```
 
-- Taint the machineset for any new nodes that get added to be tainted with `nvidia.com/gpu`
+    ```sh
+    # expected output
+    localqueue.kueue.x-k8s.io/local-queue-test created
+    ```
+
+> How do users known what queues they can submit jobs to? Users submit jobs to a LocalQueue, instead of to a ClusterQueue directly. Tenants can discover which queues they can submit jobs to by listing the local queues in their namespace.
+
+- Verify the local queue is created
 
   - ```sh
-    oc -n openshift-machine-api \
-      patch "${MACHINE_SET_TYPE}" \
-      --type=merge --patch '{"spec":{"template":{"spec":{"taints":[{"key":"nvidia.com/gpu","value":"","effect":"NoSchedule"}]}}}}'
+    oc get -n sandbox queues
     ```
 
-> Tolerations will be set in the RHOAI accelerator profiles that match the Taint key.
+    ```sh
+    # expected output
+    NAME               CLUSTERQUEUE    PENDING WORKLOADS   ADMITTED WORKLOADS
+    local-queue-test   cluster-queue   0
+    ```
