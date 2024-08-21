@@ -1565,11 +1565,11 @@ data:
 
 > Tolerations will be set in the RHOAI accelerator profiles that match the Taint key.
 
-### 24. Configuring the cluster autoscaler
+### 24. (Optional) Configuring the cluster autoscaler
 
 > [More Info](https://docs.openshift.com/container-platform/4.15/machine_management/applying-autoscaling.html)
 
-### 25. Configuring distributed workloads
+## Configuring distributed workloads
 
 > [More Info](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/2.10/html/working_with_distributed_workloads/configuring-distributed-workloads_distributed-workloads)
 
@@ -1595,37 +1595,7 @@ data:
     kueue-controller-manager-77c758b595-hgrz7                         1/1     Running   8 (10m ago)    21h
     ```
 
-### 26. (Optional) Configuring the cluster autoscaler
-
-> [More Info](https://docs.openshift.com/container-platform/4.15/machine_management/applying-autoscaling.html)
-
-## Configuring distributed workloads
-
-> [source](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/2.10/html/working_with_distributed_workloads/configuring-distributed-workloads_distributed-workloads)
-
-> Components required for Distributed Workloads
-
-> 1.  dashboard
-> 1.  workbenches
-> 1.  datasciencepipelines
-> 1.  codeflare
-> 1.  kueue
-> 1.  ray
-
-- Verify the necessary pods are running - When the status of the codeflare-operator-manager-[pod-id], kuberay-operator-[pod-id], and kueue-controller-manager-[pod-id] pods is Running, the pods are ready to use.
-
-  - ```sh
-    oc get pods -n redhat-ods-applications | grep -E 'codeflare|kuberay|kueue'
-    ```
-
-    ```sh
-    # expected output
-    codeflare-operator-manager-6bbff698d-74fpz                        1/1     Running   7 (107m ago)   21h
-    kuberay-operator-bf97858f4-zg45s                                  1/1     Running   8 (10m ago)    21h
-    kueue-controller-manager-77c758b595-hgrz7                         1/1     Running   8 (10m ago)    21h
-    ```
-
-### 27. Configuring quota management for distributed workloads
+### 25. Configuring quota management for distributed workloads
 
 - Create an empty Kueue resource flavor
 
