@@ -1820,3 +1820,56 @@ Check the current configmap
     ```
 
 - Verify the `taints` key set in your Node / MachineSets match your `Accelerator Profile`.
+
+### 28. Add serving runtime
+
+> Serving Runtimes
+
+> - Single-model serving platform
+>   - Caikit TGIS ServingRuntime for KServe
+>   - OpenVINO Model Server
+>   - TGIS Standalone ServingRuntime for KServe
+> - Multi-model serving platform
+>   - OpenVINO Model Server
+
+- From RHOAI, Settings > Serving runtimes > Click Add Serving Runtime.
+
+  - Option 1:
+
+    - Select `Multi-model serving`
+    - Select `Start from scratch`
+    - Review, Copy and Paste in the content from `configs/rhoai-add-serving-runtime.yaml`
+    - Add and confirm the runtime can be selected in a Data Science Project
+
+  - Option 2:
+
+    - Review `configs/rhoai-add-serving-runtime-template.yaml`
+    - `oc apply -f configs/rhoai-add-serving-runtime-template.yaml -n redhat-ods-applications`
+    - Add and confirm the runtime can be selected in a Data Science Project
+
+### 29. Review Backing up data
+
+> Refer to [A Guide to High Availability / Disaster Recovery for Applications on OpenShift](https://www.redhat.com/en/blog/a-guide-to-high-availability/disaster-recovery-for-applications-on-openshift)
+
+#### Control plane backup and restore operations
+
+> You must [back up etcd](https://docs.openshift.com/container-platform/4.15/backup_and_restore/control_plane_backup_and_restore/backing-up-etcd.html#backup-etcd) data before shutting down a cluster; etcd is the key-value store for OpenShift Container Platform, which persists the state of all resource objects.
+
+#### Application backup and restore operations
+
+> The OpenShift API for Data Protection (OADP) product safeguards customer applications on OpenShift Container Platform. It offers comprehensive disaster recovery protection, covering OpenShift Container Platform applications, application-related cluster resources, persistent volumes, and internal images. OADP is also capable of backing up both containerized applications and virtual machines (VMs).
+
+> However, OADP does not serve as a disaster recovery solution for [etcd](https://docs.openshift.com/container-platform/4.15/backup_and_restore/control_plane_backup_and_restore/backing-up-etcd.html#backup-etcd) or OpenShift Operators.
+
+## Answer key
+
+The following command will apply all configurations from the checklist procedure above.
+
+```sh
+# setup machinesets for autoscaling
+. configs/functions.sh
+ocp_aws_cluster_autoscaling
+
+# apply all configs (still need to patch things)
+until oc apply -f configs; do : ; done
+```
