@@ -6,8 +6,9 @@
       <a href="/docs/01-step.md#step-1"> Next </a>
     </span>
 </p> -->
-<p align="right">
-    <a href="/docs/01-step.md#step-1"> Next </a>
-    <span style="float:left;"> hello
+<p style="text-align:left;">
+    This text is left aligned
+    <span style="float:right;">
+        This text is right aligned
     </span>
 </p>
