@@ -1,6 +1,6 @@
 # Step 1
 
-<p align="right">
+<p align="center">
 <a href="/docs/00-step.md#step-0">Prev</a>
 &nbsp;&nbsp;
 <a href="/docs/02-step.md#step-2">Next</a>
