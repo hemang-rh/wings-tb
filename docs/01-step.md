@@ -54,5 +54,8 @@ oc login <openshift_cluster_url> -u <admin_username> -p <password>
 
 ![](/assets/00-web-terminal.gif)
 
-<a class="top-link hide" href="#top">↑</a>
-<a name="top"></a>
+<p align="right">
+<a href="/docs/00-step.md#step-0">Prev</a>
+&nbsp;&nbsp;
+<a href="/docs/02-step.md#step-2">Next</a>
+</p>
