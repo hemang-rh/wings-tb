@@ -1,7 +1,7 @@
 # Step 1
 
 <p style="text-align:left;">
-    <span style="float:left;">
+    <span style="float:right;">
       <a href="/docs/00-step.md#step-2"> Prev </a>
     </span>
     <span style="float:right;">
