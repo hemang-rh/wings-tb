@@ -1,6 +1,6 @@
 # Step 1
 
-<a class="top-link hide" href="/docs/02-step.md#step-2">-></a>
+<a class="top-link hide" href="/docs/02-step.md#step-2"> -> </a>
 <a name="top"></a>
 
 > Intended commands to be executed from the root directory of this repository. The majority of the configurations to be applied are already created, with the exception of the ones that prompts you for specifics that are either created in the command or dumped to a `scratch` dir that is ignored in the `.gitignore`.
