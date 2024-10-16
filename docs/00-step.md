@@ -7,6 +7,6 @@
     </span>
 </p> -->
 <p>
-<span style="float:left;"> Left text </span> 
-<span style="float:right;"> Right Text </span> 
+<span style="text-align:left;"> Left text </span> 
+<span style="text-align:right;"> Right Text </span> 
 </p>
