@@ -7,7 +7,7 @@
     </span>
 </p> -->
 <p align="right">
-<a href="/docs/00-step.md#step-0">Prev</a>
+<a href="/docs/00-step.md">Prev</a>
 &nbsp;&nbsp;
-<a href="/docs/01-step.md#step-1">Next</a>
+<a href="/docs/01-step.md">Next</a>
 </p>
