@@ -8,6 +8,6 @@
 </p> -->
 <p align="right">
     <a href="/docs/01-step.md#step-1"> Next </a>
-    <span style="float:left"> hello
+    <span style="float:left;"> hello
     </span>
 </p>
